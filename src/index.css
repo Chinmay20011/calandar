@@ -1,0 +1,77 @@
+@import url("https://p.typekit.net/p.css?s=1&k=znv8avo&ht=tk&f=1090.1091.1092.29965.29966.29967.29968.29969.29970.29971.29972.29973.29974.54138.54139.54140.54141&a=18253785&app=typekit&e=css");
+
+@import "tailwindcss";
+
+
+@font-face {
+  font-family: "sweater-school";
+  src: url("https://use.typekit.net/af/3d7f67/000000000000000077359806/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+      format("woff2"),
+    url("https://use.typekit.net/af/3d7f67/000000000000000077359806/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+      format("woff"),
+    url("https://use.typekit.net/af/3d7f67/000000000000000077359806/30/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+      format("opentype");
+  font-display: auto;
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: normal;
+}
+
+.width-text {
+    width: 100%;
+  }
+  
+  .tk-sweater-school {
+    font-family: "sweater-school", sans-serif;
+  }
+  .tk-axia {
+    font-family: "axia", sans-serif;
+  }
+  .tk-axia-stencil {
+    font-family: "axia-stencil", sans-serif;
+  }
+  .tk-kit-sans-variable {
+    font-family: "kit-sans-variable", sans-serif;
+  }
+  .tk-kit-rounded-variable {
+    font-family: "kit-rounded-variable", sans-serif;
+  }
+  
+  *,
+  html,
+  body {
+    font-family: "sweater-school", sans-serif !important ;
+  }
+  
+  /* Width and height of the scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5x;
+  }
+  
+  /* Track (background of the scrollbar) */
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+  }
+  
+  /* Handle (the draggable part) */
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+  
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3366cc #f1f1f1;
+  }
+  
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
