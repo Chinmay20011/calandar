@@ -20,7 +20,8 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Checkbox
+  Checkbox,
+  InputAdornment
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DateRangeIcon from '@mui/icons-material/DateRange';
@@ -31,6 +32,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import GroupIcon from '@mui/icons-material/Group';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CircleIcon from '@mui/icons-material/Circle';
+import SearchIcon from '@mui/icons-material/Search';
 
 const colorOptions = [
   { name: 'Blue', value: '#4285F4' },
@@ -111,6 +113,8 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
     location: '',
     color: '#4285F4'
   });
+
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Reset form data when initialDate or initialTime changes
   useEffect(() => {
@@ -193,6 +197,7 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
   
   const handleStudentClick = (event) => {
     setStudentAnchorEl(event.currentTarget);
+    setSearchQuery(''); // Reset search when opening popover
   };
   
   const handleStudentClose = () => {
@@ -227,6 +232,15 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
       });
     }
   };
+  
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+  
+  // Filter students based on search query
+  const filteredStudents = studentOptions.filter(student => 
+    student.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   
   const validateForm = () => {
     const newErrors = {};
@@ -489,21 +503,45 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
                       horizontal: 'left',
                     }}
                   >
-                    <List sx={{ width: '250px', maxHeight: '300px', overflow: 'auto' }}>
-                      {studentOptions.map((student) => (
-                        <ListItem key={student} dense button onClick={() => handleStudentToggle(student)}>
-                          <ListItemIcon>
-                            <Checkbox
-                              edge="start"
-                              checked={formData.students.indexOf(student) !== -1}
-                              tabIndex={-1}
-                              disableRipple
-                            />
-                          </ListItemIcon>
-                          <ListItemText primary={student} />
-                        </ListItem>
-                      ))}
-                    </List>
+                    <Box sx={{ width: '250px' }}>
+                      <TextField
+                        placeholder="Search students"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        sx={{ m: 1 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <List sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                        {filteredStudents.length > 0 ? (
+                          filteredStudents.map((student) => (
+                            <ListItem key={student} dense button onClick={() => handleStudentToggle(student)}>
+                              <ListItemIcon>
+                                <Checkbox
+                                  edge="start"
+                                  checked={formData.students.indexOf(student) !== -1}
+                                  tabIndex={-1}
+                                  disableRipple
+                                />
+                              </ListItemIcon>
+                              <ListItemText primary={student} />
+                            </ListItem>
+                          ))
+                        ) : (
+                          <ListItem>
+                            <ListItemText primary="No students found" />
+                          </ListItem>
+                        )}
+                      </List>
+                    </Box>
                   </Popover>
                 </FormControl>
               </Box>
@@ -608,4 +646,3 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
 };
 
 export default NewEventForm;
-          

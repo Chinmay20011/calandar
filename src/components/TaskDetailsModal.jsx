@@ -32,19 +32,6 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedTask, setEditedTask] = useState(null);
 
-    // Initialize edited task when task changes
-    React.useEffect(() => {
-        if (task) {
-            const initialTask = {...task};
-            // Convert students to objects with name and attendance
-            initialTask.students = (initialTask.students || []).map(student => ({
-                name: typeof student === 'object' ? student.name : student,
-                attendance: (student && typeof student === 'object' && student.attendance) || 'absent'
-            }));
-            setEditedTask(initialTask);
-        }
-    }, [task]);
-
     // Format date for display
     const formatDate = (dateString) => {
         if (!dateString) return '';
@@ -62,12 +49,45 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
         }
     };
 
+    // Convert 24-hour time to 12-hour format
+    const to12Hour = (time24) => {
+        if (!time24) return '';
+        try {
+            // If already in 12-hour format
+            if (time24.includes('AM') || time24.includes('PM')) {
+                return time24;
+            }
+            
+            // Convert from 24-hour format
+            if (time24.includes(':')) {
+                const [hours24, minutes] = time24.split(':');
+                const hours = parseInt(hours24);
+                if (isNaN(hours)) return time24;
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const hours12 = hours % 12 || 12;
+                return `${hours12}:${minutes} ${period}`;
+            }
+            return time24;
+        } catch (e) {
+            return time24;
+        }
+    };
+
+    // Get current time in 12-hour format
+    const getCurrentTime = () => {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12;
+        return `${hours12}:${minutes} ${period}`;
+    };
+
     const handleEditToggle = () => {
         setIsEditing(!isEditing);
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
+    const handleInputChange = (name, value) => {
         setEditedTask(prev => ({
             ...prev,
             [name]: value
@@ -87,13 +107,42 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
     const handleAttendanceToggle = (studentName) => {
         setEditedTask(prev => ({
             ...prev,
-            students: prev.students.map(student => 
-                student.name === studentName
-                    ? { ...student, attendance: student.attendance === 'present' ? 'absent' : 'present' }
-                    : student
-            )
+            students: prev.students.map(student => {
+                if (student.name === studentName) {
+                    const newAttendance = student.attendance === 'present' ? 'absent' : 'present';
+                    return {
+                        ...student,
+                        attendance: newAttendance,
+                        arrivalTime: newAttendance === 'present' ? getCurrentTime() : null
+                    };
+                }
+                return student;
+            })
         }));
     };
+
+    // Initialize edited task when task changes
+    React.useEffect(() => {
+        if (task) {
+            const initialTask = {...task};
+            // Convert students to objects with name, attendance and arrival time
+            initialTask.students = (initialTask.students || []).map(student => {
+                if (typeof student === 'object' && student.name) {
+                    return {
+                        name: student.name,
+                        attendance: student.attendance || 'absent',
+                        arrivalTime: student.arrivalTime || null
+                    };
+                }
+                return {
+                    name: student,
+                    attendance: 'absent',
+                    arrivalTime: null
+                };
+            });
+            setEditedTask(initialTask);
+        }
+    }, [task]);
 
     // If task is null or undefined, don't render the modal
     if (!task) return null;
@@ -125,7 +174,7 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                     <TextField
                         name="title"
                         value={editedTask.title}
-                        onChange={handleInputChange}
+                        onChange={(e) => handleInputChange('title', e.target.value)}
                         variant="outlined"
                         fullWidth
                         size="small"
@@ -168,7 +217,7 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                         name="date"
                                         type="date"
                                         value={editedTask.date ? new Date(editedTask.date).toISOString().split('T')[0] : ''}
-                                        onChange={handleInputChange}
+                                        onChange={(e) => handleInputChange('date', e.target.value)}
                                         size="small"
                                         fullWidth
                                     />
@@ -186,15 +235,14 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                 <Typography variant="subtitle2" color="text.secondary">Start Time</Typography>
                                 {isEditing ? (
                                     <TextField
-                                        name="startTime"
-                                        type="time"
-                                        value={editedTask.startTime}
-                                        onChange={handleInputChange}
+                                        value={editedTask.startTime || ''}
+                                        onChange={(e) => handleInputChange('startTime', e.target.value)}
                                         size="small"
+                                        type="time"
                                         fullWidth
                                     />
                                 ) : (
-                                    <Typography variant="body1">{task.startTime}</Typography>
+                                    <Typography variant="body1">{to12Hour(task.startTime)}</Typography>
                                 )}
                             </Box>
                         </Box>
@@ -207,15 +255,14 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                 <Typography variant="subtitle2" color="text.secondary">End Time</Typography>
                                 {isEditing ? (
                                     <TextField
-                                        name="endTime"
-                                        type="time"
-                                        value={editedTask.endTime}
-                                        onChange={handleInputChange}
+                                        value={editedTask.endTime || ''}
+                                        onChange={(e) => handleInputChange('endTime', e.target.value)}
                                         size="small"
+                                        type="time"
                                         fullWidth
                                     />
                                 ) : (
-                                    <Typography variant="body1">{task.endTime}</Typography>
+                                    <Typography variant="body1">{to12Hour(task.endTime)}</Typography>
                                 )}
                             </Box>
                         </Box>
@@ -260,37 +307,60 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                                             transition: 'background-color 0.2s'
                                                         }}
                                                         secondaryAction={
-                                                            <FormControlLabel
-                                                                control={
-                                                                    <Switch
-                                                                        checked={student.attendance === 'present'}
-                                                                        onChange={() => handleAttendanceToggle(student.name)}
-                                                                        color="success"
-                                                                        sx={{
-                                                                            '& .MuiSwitch-switchBase.Mui-checked': {
-                                                                                color: 'success.main'
-                                                                            },
-                                                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                                                backgroundColor: 'success.main'
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                }
-                                                                label={
-                                                                    <Typography 
-                                                                        variant="body2" 
-                                                                        sx={{ 
-                                                                            fontWeight: 'bold',
-                                                                            color: student.attendance === 'present' ? 'success.main' : 'error.main',
-                                                                            minWidth: '20px',
-                                                                            transition: 'color 0.2s'
-                                                                        }}
-                                                                    >
-                                                                        {student.attendance === 'present' ? 'P' : 'A'}
-                                                                    </Typography>
-                                                                }
-                                                                labelPlacement="start"
-                                                            />
+                                                            <Box sx={{ 
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                gap: 2,
+                                                                minWidth: '250px',
+                                                                justifyContent: 'flex-end'
+                                                            }}>
+                                                                {student.attendance === 'present' && student.arrivalTime && (
+                                                                    <Box sx={{ 
+                                                                        display: 'flex', 
+                                                                        alignItems: 'center',
+                                                                        bgcolor: 'success.light',
+                                                                        color: 'success.contrastText',
+                                                                        px: 1.5,
+                                                                        py: 0.5,
+                                                                        borderRadius: 1,
+                                                                        fontSize: '0.75rem'
+                                                                    }}>
+                                                                        <AccessTimeIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
+                                                                        {student.arrivalTime}
+                                                                    </Box>
+                                                                )}
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Switch
+                                                                            checked={student.attendance === 'present'}
+                                                                            onChange={() => handleAttendanceToggle(student.name)}
+                                                                            color="success"
+                                                                            sx={{
+                                                                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                                                                    color: 'success.main'
+                                                                                },
+                                                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                                                    backgroundColor: 'success.main'
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    }
+                                                                    label={
+                                                                        <Typography 
+                                                                            variant="body2" 
+                                                                            sx={{ 
+                                                                                fontWeight: 'bold',
+                                                                                color: student.attendance === 'present' ? 'success.main' : 'error.main',
+                                                                                minWidth: '20px',
+                                                                                transition: 'color 0.2s'
+                                                                            }}
+                                                                        >
+                                                                            {student.attendance === 'present' ? 'P' : 'A'}
+                                                                        </Typography>
+                                                                    }
+                                                                    labelPlacement="start"
+                                                                />
+                                                            </Box>
                                                         }
                                                     >
                                                         <ListItemText 
@@ -324,7 +394,7 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                         <TextField
                                             name="location"
                                             value={editedTask.location}
-                                            onChange={handleInputChange}
+                                            onChange={(e) => handleInputChange('location', e.target.value)}
                                             size="small"
                                             fullWidth
                                         />
@@ -346,7 +416,7 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                         <TextField
                                             name="teacher"
                                             value={editedTask.teacher}
-                                            onChange={handleInputChange}
+                                            onChange={(e) => handleInputChange('teacher', e.target.value)}
                                             size="small"
                                             fullWidth
                                         />
@@ -368,7 +438,7 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                     <TextField
                                         name="description"
                                         value={editedTask.description || ''}
-                                        onChange={handleInputChange}
+                                        onChange={(e) => handleInputChange('description', e.target.value)}
                                         multiline
                                         rows={3}
                                         size="small"

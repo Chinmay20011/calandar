@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { 
   Button, 
   Checkbox, 
@@ -6,7 +7,6 @@ import {
   ListItem, 
   ListItemIcon, 
   ListItemText, 
-  Paper, 
   Box,
   Avatar,
   Typography
@@ -25,9 +25,8 @@ const getInitials = (name) => {
     .toUpperCase();
 };
 
-const CalanderLeft = ({ onAddEvent, onDateSelect, teachers, onToggleTeacher }) => {
-  const [openEventForm, setOpenEventForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+const CalanderLeft = ({ onAddEvent, onDateSelect, selectedDate, teachers, onToggleTeacher }) => {
+  const [openEventForm, setOpenEventForm] = React.useState(false);
 
   const handleToggle = (id) => {
     if (onToggleTeacher) {
@@ -36,11 +35,6 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, teachers, onToggleTeacher }) =
   };
 
   const handleOpenEventForm = () => {
-    // Set the view mode to Day in CalanderRight when opening the event form
-    if (onDateSelect) {
-      // Trigger date selection with current date to activate Day view
-      onDateSelect(new Date());
-    }
     setOpenEventForm(true);
   };
 
@@ -53,13 +47,6 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, teachers, onToggleTeacher }) =
       onAddEvent(eventData);
     }
     handleCloseEventForm();
-  };
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    if (onDateSelect) {
-      onDateSelect(date);
-    }
   };
 
   return (
@@ -91,8 +78,8 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, teachers, onToggleTeacher }) =
       {/* Mini Calendar */}
       <Box sx={{ mb: 2 }}>
         <MiniCalendar 
-          selectedDate={selectedDate} 
-          onDateChange={handleDateChange} 
+          selectedDate={selectedDate}
+          onDateSelect={onDateSelect}
         />
       </Box>
 
@@ -176,6 +163,21 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, teachers, onToggleTeacher }) =
       />
     </Box>
   );
+};
+
+CalanderLeft.propTypes = {
+  onAddEvent: PropTypes.func,
+  onDateSelect: PropTypes.func.isRequired,
+  selectedDate: PropTypes.instanceOf(Date).isRequired,
+  teachers: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      checked: PropTypes.bool.isRequired,
+      color: PropTypes.string.isRequired
+    })
+  ).isRequired,
+  onToggleTeacher: PropTypes.func
 };
 
 export default CalanderLeft;
