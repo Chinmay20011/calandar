@@ -60,20 +60,29 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, selectedDate, teachers, onTogg
     }}>
       {/* Add Event Button */}
       <Button 
-        variant="contained" 
-        color="primary" 
-        startIcon={<AddIcon />}
-        onClick={handleOpenEventForm}
-        sx={{ 
-          mb: 2, 
-          textTransform: 'none',
-          fontSize: '0.85rem',
-          py: 1
-        }}
-        fullWidth
-      >
-        ADD EVENT
-      </Button>
+  variant="contained" 
+  color="primary" 
+  startIcon={<AddIcon />}
+  onClick={handleOpenEventForm}
+  sx={{ 
+    width: '130px',
+    mb: 2, 
+    textTransform: 'none',
+    fontSize: '0.85rem',
+    p: 1,
+    backgroundColor: 'white', // Set background to white
+    color: 'black', // Set text color to black
+    borderRadius: '20px', // Add border radius
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Add box shadow
+    '&:hover': { // Optional: Add hover effect
+      backgroundColor: '#f0f0f0',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+    }
+  }}
+  fullWidth
+>
+  Create
+</Button>
 
       {/* Mini Calendar */}
       <Box sx={{ mb: 2 }}>
@@ -84,7 +93,7 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, selectedDate, teachers, onTogg
       </Box>
 
       {/* Teachers List */}
-      <Box sx={{ mb: 1 }}>
+      <Box sx={{ mb: 1, flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <Typography 
           variant="subtitle2" 
           fontWeight="bold" 
@@ -96,7 +105,7 @@ const CalanderLeft = ({ onAddEvent, onDateSelect, selectedDate, teachers, onTogg
         >
           Teachers
         </Typography>
-        <List dense disablePadding>
+        <List dense disablePadding sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
           {teachers.map((teacher) => (
             <ListItem 
               key={teacher.id} 

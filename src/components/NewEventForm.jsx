@@ -95,9 +95,9 @@ const studentOptions = [
   'Pooja'
 ];
 
-const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => {
+const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teachers = [], initialTeacherId = null }) => {
   const today = new Date();
-  const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const formattedDate = initialDate || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
   const [formData, setFormData] = useState({
     title: '',
@@ -107,6 +107,7 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
     duration: '1 hour',
     endTime: '',
     teacher: '',
+    teacherId: null,
     subject: '',
     branch: '',
     students: [],
@@ -115,8 +116,8 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
   
-  // Reset form data when initialDate or initialTime changes
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -124,10 +125,25 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
       startTime: initialTime || prev.startTime
     }));
   }, [initialDate, initialTime, formattedDate]);
-  
+
+  useEffect(() => {
+    if (initialTeacherId && teachers && teachers.length > 0) {
+      const selectedTeacher = teachers.find(teacher => teacher.id === initialTeacherId);
+      if (selectedTeacher) {
+        setFormData(prev => ({
+          ...prev,
+          teacher: selectedTeacher.name,
+          teacherId: selectedTeacher.id,
+          color: selectedTeacher.color || prev.color
+        }));
+      }
+    }
+  }, [initialTeacherId, teachers, open]);
+
   const [errors, setErrors] = useState({});
   const [colorAnchorEl, setColorAnchorEl] = useState(null);
   const [studentAnchorEl, setStudentAnchorEl] = useState(null);
+  const [teacherAnchorEl, setTeacherAnchorEl] = useState(null);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -136,7 +152,6 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
       [name]: value
     });
     
-    // Clear error when field is filled
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -144,30 +159,24 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
       });
     }
 
-    // Calculate end time when start time or duration changes
     if (name === 'startTime' || name === 'duration') {
       calculateEndTime(name === 'startTime' ? value : formData.startTime, name === 'duration' ? value : formData.duration);
     }
   };
   
-  // Function to calculate end time based on start time and duration
   const calculateEndTime = (startTime, duration) => {
     if (!startTime || !duration) return;
     
-    // Extract hours from duration (e.g., "1.5 hours" -> 1.5)
     const durationHours = parseFloat(duration.split(' ')[0]);
     
     if (isNaN(durationHours)) return;
     
-    // Create a date object with the start time
     const [hours, minutes] = startTime.split(':').map(Number);
     const startDate = new Date();
     startDate.setHours(hours, minutes, 0, 0);
     
-    // Calculate end time by adding duration in milliseconds
     const endDate = new Date(startDate.getTime() + durationHours * 60 * 60 * 1000);
     
-    // Format end time as HH:MM
     const endHours = endDate.getHours().toString().padStart(2, '0');
     const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
     const endTime = `${endHours}:${endMinutes}`;
@@ -187,7 +196,6 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
   };
   
   const handleColorSelect = (color) => {
-    console.log('Selected color:', color); // Debug log
     setFormData(prev => ({
       ...prev,
       color: color
@@ -197,7 +205,7 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
   
   const handleStudentClick = (event) => {
     setStudentAnchorEl(event.currentTarget);
-    setSearchQuery(''); // Reset search when opening popover
+    setSearchQuery(''); 
   };
   
   const handleStudentClose = () => {
@@ -237,9 +245,35 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
     setSearchQuery(event.target.value);
   };
   
-  // Filter students based on search query
+  const handleTeacherClick = (event) => {
+    setTeacherAnchorEl(event.currentTarget);
+    setTeacherSearchQuery(''); 
+  };
+  
+  const handleTeacherClose = () => {
+    setTeacherAnchorEl(null);
+  };
+  
+  const handleTeacherSelect = (teacherName, teacherId, teacherColor) => {
+    setFormData({
+      ...formData,
+      teacher: teacherName,
+      teacherId: teacherId,
+      color: teacherColor || formData.color
+    });
+    handleTeacherClose();
+  };
+  
+  const handleTeacherSearchChange = (event) => {
+    setTeacherSearchQuery(event.target.value);
+  };
+  
   const filteredStudents = studentOptions.filter(student => 
     student.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredTeachers = teachers.filter(teacher => 
+    teacher.name.toLowerCase().includes(teacherSearchQuery.toLowerCase())
   );
   
   const validateForm = () => {
@@ -263,19 +297,36 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
   
   const handleSubmit = () => {
     if (validateForm()) {
-      // Ensure we're passing the exact selected color
       const eventData = {
         ...formData,
-        color: formData.color // Pass the exact selected color
+        color: formData.color,
+        teacherId: formData.teacherId,
+        students: formData.students.map((student, index) => {
+          if (typeof student === 'object' && student !== null && 
+              student.hasOwnProperty('id') && 
+              student.hasOwnProperty('name')) {
+            return {
+              ...student,
+              attendance: student.attendance || 'present' 
+            };
+          }
+          
+          return {
+            id: index,
+            name: typeof student === 'string' ? student : '',
+            attendance: 'present' 
+          };
+        })
       };
-      console.log('Submitting event with color:', eventData.color); // Debug log
+      
       onSubmit(eventData);
-      onClose(); // Close the form after submission
+      onClose(); 
     }
   };
   
   const colorOpen = Boolean(colorAnchorEl);
   const studentOpen = Boolean(studentAnchorEl);
+  const teacherOpen = Boolean(teacherAnchorEl);
   
   return (
     <Dialog 
@@ -309,7 +360,6 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
       
       <DialogContent dividers>
         <Box sx={{ p: 2 }}>
-          {/* Color selection at the top */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
           </Box>
           <TextField
@@ -398,20 +448,86 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 <PersonIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
-                  <InputLabel id="teacher-label">Teacher</InputLabel>
-                  <Select
-                    labelId="teacher-label"
-                    name="teacher"
-                    value={formData.teacher}
-                    onChange={handleInputChange}
-                    label="Teacher"
+                  <Box 
+                    onClick={handleTeacherClick}
+                    sx={{ 
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      p: 1,
+                      minHeight: '56px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
                   >
-                    {teacherOptions.map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    {formData.teacher ? formData.teacher : 'Select Teacher'}
+                  </Box>
+                  <Popover
+                    open={teacherOpen}
+                    anchorEl={teacherAnchorEl}
+                    onClose={handleTeacherClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    }}
+                  >
+                    <Box sx={{ width: '250px' }}>
+                      <TextField
+                        placeholder="Search teachers"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        value={teacherSearchQuery}
+                        onChange={handleTeacherSearchChange}
+                        sx={{ m: 2 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <List sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                        {filteredTeachers.length > 0 ? (
+                          filteredTeachers.map((teacher) => (
+                            <ListItem 
+                              key={teacher.id} 
+                              dense 
+                              button 
+                              onClick={() => handleTeacherSelect(teacher.name, teacher.id, teacher.color)}
+                              sx={{
+                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+                              }}
+                            >
+                              <Box 
+                                sx={{ 
+                                  width: 24, 
+                                  height: 24, 
+                                  borderRadius: '50%', 
+                                  backgroundColor: teacher.color || '#ccc',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                  mr: 1,
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                {teacher.name.split(' ').map(part => part[0]).join('')}
+                              </Box>
+                              <ListItemText primary={teacher.name} />
+                            </ListItem>
+                          ))
+                        ) : (
+                          <ListItem>
+                            <ListItemText primary="No teachers found" />
+                          </ListItem>
+                        )}
+                      </List>
+                    </Box>
+                  </Popover>
                 </FormControl>
               </Box>
             </Grid>
@@ -464,7 +580,6 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime }) => 
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 <GroupIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
-                  {/* <InputLabel shrink>Students</InputLabel> */}
                   <Box 
                     onClick={handleStudentClick}
                     sx={{ 

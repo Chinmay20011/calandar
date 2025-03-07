@@ -22,6 +22,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [openTaskModal, setOpenTaskModal] = useState(false);
+  const [selectedTeacherId, setSelectedTeacherId] = useState(null);
   
   // Log events for debugging
   useEffect(() => {
@@ -139,7 +140,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   };
   
   // Handle opening the event form
-  const handleOpenEventForm = (hour) => {
+  const handleOpenEventForm = (hour, teacherId = null) => {
     // Format the hour to HH:MM format
     const formattedHour = `${hour.toString().padStart(2, '0')}:00`;
     setSelectedTime(formattedHour);
@@ -211,93 +212,273 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   // Render day view
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const dayEvents = getDayEvents();
-
+    const activeTeachers = teachers ? teachers.filter(teacher => teacher.checked) : [];
+    
+    // Always show at least one column, even if no teachers are selected
     return (
-      <Box sx={{ p: 2, height: 'calc(100vh - 130px)', overflowY: 'auto' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          {formatDay(currentDate)}
-        </Typography>
-        <Box>
-          {hours.map((hour) => {
-            const hourEvents = dayEvents.filter(event => {
-              if (!event.startTime || typeof event.startTime !== 'string') return false;
-              const timeParts = event.startTime.split(':');
-              const eventHour = parseInt(timeParts[0], 10);
-              return !isNaN(eventHour) && eventHour === hour;
-            });
-
-            return (
+      <Box sx={{ 
+        display: 'grid',
+        gridTemplateColumns: activeTeachers.length > 0 
+          ? `80px repeat(${activeTeachers.length}, 1fr)` 
+          : '80px 1fr', // One column for time + one empty column
+        gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
+        border: '1px solid #e0e0e0',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        height: '100%', // Take full height of parent container
+        width: '100%', // Take full width
+        overflowY: 'auto'
+      }}>
+        {/* Empty top-left cell */}
+        <Box sx={{ 
+          gridColumn: '1 / 2', 
+          gridRow: '1 / 2',
+          borderRight: '1px solid #e0e0e0',
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#f5f5f5',
+          p: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Typography variant="body2" fontWeight="bold">
+            Time
+          </Typography>
+        </Box>
+        
+        {/* Teacher Headers - only show if there are active teachers */}
+        {activeTeachers.length > 0 ? (
+          activeTeachers.map((teacher, index) => (
+            <Box 
+              key={teacher.id}
+              sx={{ 
+                gridColumn: `${index + 2} / ${index + 3}`,
+                gridRow: '1 / 2',
+                borderRight: index < activeTeachers.length - 1 ? '1px solid #e0e0e0' : 'none',
+                borderBottom: '1px solid #e0e0e0',
+                backgroundColor: '#f5f5f5',
+                p: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column'
+              }}
+            >
               <Box 
-                key={hour} 
                 sx={{ 
-                  display: 'flex', 
-                  borderBottom: '1px solid #e0e0e0',
-                  '&:last-child': {
-                    borderBottom: 'none'
-                  },
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: '50%', 
+                  backgroundColor: teacher.color || '#ccc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  mb: 1
                 }}
-                onClick={() => handleOpenEventForm(hour)}
               >
-                <Box 
-                  sx={{ 
-                    width: '60px', 
-                    p: 1, 
-                    textAlign: 'right', 
-                    color: 'text.secondary',
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
-                </Box>
-                <Box sx={{ flex: 1, position: 'relative', minHeight: '60px' }}>
-                  {hourEvents.map((event, index) => (
-                    <Paper 
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event);
-                      }}
-                      sx={{
-                        position: 'absolute',
-                        top: '4px',
-                        left: `${4 + (index * 220)}px`,
-                        width: '200px',
-                        height: 'calc(100% - 8px)',
-                        backgroundColor: event.color || '#4285F4',
-                        color: 'white',
-                        p: 1,
-                        borderRadius: '4px',
-                        fontSize: '0.875rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        zIndex: 1,
+                {teacher.name.split(' ').map(part => part[0]).join('')}
+              </Box>
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }} noWrap>
+                {teacher.name}
+              </Typography>
+            </Box>
+          ))
+        ) : (
+          // Empty header when no teachers are selected
+          <Box 
+            sx={{ 
+              gridColumn: '2 / 3',
+              gridRow: '1 / 2',
+              borderBottom: '1px solid #e0e0e0',
+              backgroundColor: '#f5f5f5',
+              p: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              No teachers selected
+            </Typography>
+          </Box>
+        )}
+        
+        {/* Hour cells - always show */}
+        {hours.map(hour => {
+          return (
+            <React.Fragment key={hour}>
+              {/* Hour label */}
+              <Box 
+                sx={{ 
+                  gridColumn: '1 / 2',
+                  gridRow: `${hour + 2} / ${hour + 3}`,
+                  borderRight: '1px solid #e0e0e0',
+                  borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
+                  backgroundColor: '#f5f5f5',
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Typography variant="body2">
+                  {hour === 0 ? '12 AM' : 
+                   hour < 12 ? `${hour} AM` : 
+                   hour === 12 ? '12 PM' : 
+                   `${hour - 12} PM`}
+                </Typography>
+              </Box>
+              
+              {/* Teacher cells - only show if there are active teachers */}
+              {activeTeachers.length > 0 ? (
+                activeTeachers.map((teacher, index) => {
+                  // Find events for this teacher at this hour
+                  const teacherEvents = events.filter(event => {
+                    if (!event.startTime || typeof event.startTime !== 'string') return false;
+                    
+                    const timeParts = event.startTime.split(':');
+                    const eventHour = parseInt(timeParts[0], 10);
+                    
+                    // Check if event is for this teacher and hour
+                    return !isNaN(eventHour) && 
+                          eventHour === hour && 
+                          event.teacherId === teacher.id;
+                  });
+                  
+                  return (
+                    <Box 
+                      key={`${hour}-${teacher.id}`}
+                      sx={{ 
+                        gridColumn: `${index + 2} / ${index + 3}`,
+                        gridRow: `${hour + 2} / ${hour + 3}`,
+                        p: 0.5,
+                        borderRight: index < activeTeachers.length - 1 ? '1px solid #e0e0e0' : 'none',
+                        borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
+                        minHeight: '60px',
+                        position: 'relative',
                         cursor: 'pointer',
                         '&:hover': {
-                          zIndex: 2,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                          filter: 'brightness(0.9)'
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)'
                         }
                       }}
+                      onClick={() => {
+                        // When clicking on an empty cell, open event form with pre-selected teacher
+                        handleOpenEventForm(hour, teacher.id);
+                      }}
                     >
-                      <Typography noWrap>
-                        {event.title}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.9 }} noWrap>
-                        {event.startTime} - {event.endTime}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Box>
-              </Box>
-            );
-          })}
-        </Box>
+                      {/* Display events in this cell */}
+                      {teacherEvents.map((event, eventIndex) => (
+                        <Paper 
+                          key={eventIndex}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEventClick(event);
+                          }}
+                          sx={{
+                            position: 'absolute',
+                            top: '2px',
+                            left: '2px',
+                            right: '2px',
+                            height: 'calc(100% - 4px)',
+                            backgroundColor: event.color || teacher.color || '#4285F4',
+                            color: 'white',
+                            p: 1,
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            zIndex: 1,
+                            cursor: 'pointer',
+                            '&:hover': {
+                              zIndex: 2,
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                              filter: 'brightness(0.9)'
+                            }
+                          }}
+                        >
+                          <Typography variant="caption" sx={{ fontWeight: 'bold' }} noWrap>
+                            {event.title}
+                          </Typography>
+                          {event.students && event.students.length > 0 && (
+                            <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                              {event.students.slice(0, 3).map((student, studentIndex) => {
+                                // Handle both string format and object format as per memory requirements
+                                const studentObj = typeof student === 'string' 
+                                  ? { id: studentIndex, name: student, attendance: 'present' } 
+                                  : student;
+                                
+                                return (
+                                  <Box 
+                                    key={studentObj.id || studentIndex}
+                                    sx={{ 
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      backgroundColor: 'rgba(255,255,255,0.2)',
+                                      borderRadius: '4px',
+                                      px: 0.5,
+                                      fontSize: '0.7rem'
+                                    }}
+                                  >
+                                    {studentObj.name}
+                                    {studentObj.attendance && (
+                                      <Box 
+                                        sx={{ 
+                                          ml: 0.5,
+                                          width: 14,
+                                          height: 14,
+                                          borderRadius: '50%',
+                                          backgroundColor: studentObj.attendance === 'present' ? '#4CAF50' : '#F44336',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '0.6rem',
+                                          fontWeight: 'bold'
+                                        }}
+                                      >
+                                        {studentObj.attendance === 'present' ? 'P' : 'A'}
+                                      </Box>
+                                    )}
+                                  </Box>
+                                );
+                              })}
+                              {event.students.length > 3 && (
+                                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                                  +{event.students.length - 3}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                        </Paper>
+                      ))}
+                    </Box>
+                  );
+                })
+              ) : (
+                // Empty cell when no teachers are selected
+                <Box 
+                  key={`${hour}-empty`}
+                  sx={{ 
+                    gridColumn: '2 / 3',
+                    gridRow: `${hour + 2} / ${hour + 3}`,
+                    borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
+                    minHeight: '60px',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                  onClick={() => {
+                    // When clicking on an empty cell with no teachers, show a message
+                    alert('Please select at least one teacher from the sidebar to create an event.');
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
       </Box>
     );
   };
@@ -351,7 +532,16 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
       case 'Week':
         return renderWeekView();
       case 'Day':
-        return renderDayView();
+        return (
+          <Box sx={{ 
+            height: '100%', // Take full height
+            width: '100%', // Take full width
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {renderDayView()}
+          </Box>
+        );
       case 'Agenda':
         return renderAgendaView();
       default:
@@ -434,7 +624,14 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
       </Paper>
       
       {/* Calendar Content */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: 'calc(100vh - 130px)' // Adjust height to take remaining space
+      }}>
         {renderCurrentView()}
       </Box>
 
@@ -445,6 +642,8 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
         onSubmit={handleSubmitEvent} 
         initialDate={currentDate.toISOString().split('T')[0]}
         initialTime={selectedTime}
+        teachers={teachers} 
+        initialTeacherId={selectedTeacherId} 
       />
 
       {viewMode === 'Day' && (
