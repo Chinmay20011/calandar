@@ -8,8 +8,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import NewEventForm from './NewEventForm';
 
-const Week = ({ currentDate, onAddEvent }) => {
-  const [events, setEvents] = useState([]);
+const Week = ({ currentDate, events = [], onAddEvent, onEventClick }) => {
   const [open, setOpen] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -67,7 +66,7 @@ const Week = ({ currentDate, onAddEvent }) => {
   };
 
   const addEvent = (eventDetails) => {
-    setEvents([...events, eventDetails]);
+    events.push(eventDetails);
     handleCloseEventForm();
     if (onAddEvent) {
       onAddEvent(eventDetails);
@@ -200,34 +199,25 @@ const Week = ({ currentDate, onAddEvent }) => {
                 {getEventsForTimeSlot(day, timeSlot.hour).map((event, eventIndex) => (
                   <Paper
                     key={eventIndex}
+                    elevation={1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick?.(event);
+                    }}
                     sx={{
-                      position: 'absolute',
-                      top: '5px',
-                      left: '5px',
-                      right: '5px',
-                      height: '50px',
                       backgroundColor: event.color || '#4285F4',
                       color: 'white',
                       p: 1,
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      m: 0.5,
                       cursor: 'pointer',
-                      zIndex: 1,
                       '&:hover': {
-                        boxShadow: '0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12)'
+                        filter: 'brightness(0.9)'
                       }
                     }}
                   >
-                    <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="caption" noWrap>
                       {event.title}
                     </Typography>
-                    {event.location && (
-                      <Typography variant="caption" sx={{ display: 'block' }}>
-                        {event.location}
-                      </Typography>
-                    )}
                   </Paper>
                 ))}
               </Box>

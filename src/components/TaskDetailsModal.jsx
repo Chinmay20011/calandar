@@ -10,7 +10,13 @@ import {
     TextField,
     Grid,
     IconButton,
-    Divider
+    Divider,
+    Switch,
+    FormControlLabel,
+    Paper,
+    List,
+    ListItem,
+    ListItemText
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -20,6 +26,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SubjectIcon from '@mui/icons-material/Subject';
 import PersonIcon from '@mui/icons-material/Person';
+import PeopleIcon from '@mui/icons-material/People';
 
 const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +35,13 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
     // Initialize edited task when task changes
     React.useEffect(() => {
         if (task) {
-            setEditedTask({...task});
+            const initialTask = {...task};
+            // Convert students to objects with name and attendance
+            initialTask.students = (initialTask.students || []).map(student => ({
+                name: typeof student === 'object' ? student.name : student,
+                attendance: (student && typeof student === 'object' && student.attendance) || 'absent'
+            }));
+            setEditedTask(initialTask);
         }
     }, [task]);
 
@@ -68,6 +81,18 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
 
     const handleDelete = () => {
         onDelete(task.id);
+    };
+
+    // Handle attendance toggle for a student
+    const handleAttendanceToggle = (studentName) => {
+        setEditedTask(prev => ({
+            ...prev,
+            students: prev.students.map(student => 
+                student.name === studentName
+                    ? { ...student, attendance: student.attendance === 'present' ? 'absent' : 'present' }
+                    : student
+            )
+        }));
     };
 
     // If task is null or undefined, don't render the modal
@@ -191,6 +216,99 @@ const TaskDetailsModal = ({ open, onClose, task, onUpdate, onDelete }) => {
                                     />
                                 ) : (
                                     <Typography variant="body1">{task.endTime}</Typography>
+                                )}
+                            </Box>
+                        </Box>
+                    </Grid>
+
+                    {/* Student Attendance Section */}
+                    <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2, mt: 2 }}>
+                            <PeopleIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
+                            <Box sx={{ width: '100%' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                        Student Attendance
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Toggle to mark attendance
+                                    </Typography>
+                                </Box>
+                                
+                                {editedTask?.students && editedTask.students.length > 0 ? (
+                                    <Paper 
+                                        variant="outlined" 
+                                        sx={{ 
+                                            mt: 1, 
+                                            borderRadius: '8px',
+                                            bgcolor: 'background.paper',
+                                            '& .MuiListItem-root:hover': {
+                                                bgcolor: 'action.hover'
+                                            }
+                                        }}
+                                    >
+                                        <List disablePadding>
+                                            {editedTask.students.map((student, index) => (
+                                                <React.Fragment key={student.name}>
+                                                    <ListItem 
+                                                        sx={{ 
+                                                            py: 1,
+                                                            borderBottom: index < editedTask.students.length - 1 
+                                                                ? '1px solid rgba(0, 0, 0, 0.12)' 
+                                                                : 'none',
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                        secondaryAction={
+                                                            <FormControlLabel
+                                                                control={
+                                                                    <Switch
+                                                                        checked={student.attendance === 'present'}
+                                                                        onChange={() => handleAttendanceToggle(student.name)}
+                                                                        color="success"
+                                                                        sx={{
+                                                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                                                color: 'success.main'
+                                                                            },
+                                                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                                                backgroundColor: 'success.main'
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                }
+                                                                label={
+                                                                    <Typography 
+                                                                        variant="body2" 
+                                                                        sx={{ 
+                                                                            fontWeight: 'bold',
+                                                                            color: student.attendance === 'present' ? 'success.main' : 'error.main',
+                                                                            minWidth: '20px',
+                                                                            transition: 'color 0.2s'
+                                                                        }}
+                                                                    >
+                                                                        {student.attendance === 'present' ? 'P' : 'A'}
+                                                                    </Typography>
+                                                                }
+                                                                labelPlacement="start"
+                                                            />
+                                                        }
+                                                    >
+                                                        <ListItemText 
+                                                            primary={student.name}
+                                                            primaryTypographyProps={{
+                                                                variant: 'body1',
+                                                                fontWeight: 500
+                                                            }}
+                                                        />
+                                                    </ListItem>
+                                                </React.Fragment>
+                                            ))}
+                                        </List>
+                                    </Paper>
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                        No students assigned to this event.
+                                    </Typography>
                                 )}
                             </Box>
                         </Box>

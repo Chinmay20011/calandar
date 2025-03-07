@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Grid, Paper, Typography } from '@mui/material';
 
-const Month = ({ currentDate = new Date(), events = [] }) => {
+const Month = ({ currentDate = new Date(), events = [], onEventClick }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   // Get the first day of the month
@@ -121,6 +121,10 @@ const Month = ({ currentDate = new Date(), events = [] }) => {
                       {getEventsForDay(day).slice(0, 3).map((event, eventIndex) => (
                         <Box 
                           key={eventIndex}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick?.(event);
+                          }}
                           sx={{
                             backgroundColor: event.color || '#4285F4',
                             color: 'white',
@@ -130,7 +134,11 @@ const Month = ({ currentDate = new Date(), events = [] }) => {
                             fontSize: '0.75rem',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              filter: 'brightness(0.9)'
+                            }
                           }}
                         >
                           {event.title}

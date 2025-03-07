@@ -14,11 +14,14 @@ import TodayIcon from '@mui/icons-material/Today';
 import Month from './Month';
 import Week from './Week';
 import NewEventForm from './NewEventForm';
+import TaskDetailsModal from './TaskDetailsModal';
 
 const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, onDeleteEvent, teachers, viewMode = 'Month', onViewChange }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openEventForm, setOpenEventForm] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [openTaskModal, setOpenTaskModal] = useState(false);
   
   // Log events for debugging
   useEffect(() => {
@@ -149,128 +152,156 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   };
 
   // Handle submitting the event form  
-const handleSubmitEvent = (eventData) => {
-  handleCloseEventForm(); // Close the form
-  if (onAddEvent) {
+  const handleSubmitEvent = (eventData) => {
+    handleCloseEventForm(); // Close the form
+    if (onAddEvent) {
       onAddEvent({
-          ...eventData,
-          date: new Date(eventData.date).toISOString(), // Ensure date is formatted correctly
+        ...eventData,
+        date: new Date(eventData.date).toISOString(), // Ensure date is formatted correctly
       });
-  }
-};
-  
+    }
+  };
+
+  // Handle event click
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setOpenTaskModal(true);
+  };
+
+  // Handle task update
+  const handleTaskUpdate = (updatedTask) => {
+    if (onUpdateEvent) {
+      onUpdateEvent(updatedTask);
+    }
+    setOpenTaskModal(false);
+  };
+
+  // Handle task deletion
+  const handleTaskDelete = (taskId) => {
+    if (onDeleteEvent) {
+      onDeleteEvent(taskId);
+    }
+    setOpenTaskModal(false);
+  };
+
   // Render month view
-const renderMonthView = () => {
-  return (
+  const renderMonthView = () => {
+    return (
       <Box sx={{ p: 2 }}>
-          <Month 
-              currentDate={currentDate}
-              events={getMonthEvents()} // Ensure this returns the correct events for the current month
-          />
+        <Month 
+          currentDate={currentDate}
+          events={getMonthEvents()}
+        />
       </Box>
-  );
-};
-  
+    );
+  };
+
   // Render week view
-const renderWeekView = () => {
-  return (
+  const renderWeekView = () => {
+    return (
       <Box sx={{ height: 'calc(100vh - 130px)', overflowY: 'auto' }}>
-          <Week 
-              currentDate={currentDate}
-              events={getWeekEvents()} // Ensure this returns the correct events for the current week
-          />
+        <Week 
+          currentDate={currentDate}
+          events={getWeekEvents()}
+        />
       </Box>
-  );
-};
-  
+    );
+  };
+
   // Render day view
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const dayEvents = getDayEvents(); // Ensure this returns the correct events for the current day
+    const dayEvents = getDayEvents();
 
     return (
-        <Box sx={{ p: 2, height: 'calc(100vh - 130px)', overflowY: 'auto' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-                {formatDay(currentDate)}
-            </Typography>
-            <Box>
-                {hours.map((hour) => {
-                    const hourEvents = dayEvents.filter(event => {
-                        if (!event.startTime || typeof event.startTime !== 'string') return false;
-                        const timeParts = event.startTime.split(':');
-                        const eventHour = parseInt(timeParts[0], 10);
-                        return !isNaN(eventHour) && eventHour === hour;
-                    });
+      <Box sx={{ p: 2, height: 'calc(100vh - 130px)', overflowY: 'auto' }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          {formatDay(currentDate)}
+        </Typography>
+        <Box>
+          {hours.map((hour) => {
+            const hourEvents = dayEvents.filter(event => {
+              if (!event.startTime || typeof event.startTime !== 'string') return false;
+              const timeParts = event.startTime.split(':');
+              const eventHour = parseInt(timeParts[0], 10);
+              return !isNaN(eventHour) && eventHour === hour;
+            });
 
-                    return (
-                        <Box 
-                            key={hour} 
-                            sx={{ 
-                                display: 'flex', 
-                                borderBottom: '1px solid #e0e0e0',
-                                '&:last-child': {
-                                    borderBottom: 'none'
-                                },
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                }
-                            }}
-                            onClick={() => handleOpenEventForm(hour)} // Open form on click
-                        >
-                            <Box 
-                                sx={{ 
-                                    width: '60px', 
-                                    p: 1, 
-                                    textAlign: 'right', 
-                                    color: 'text.secondary',
-                                    fontSize: '0.75rem'
-                                }}
-                            >
-                                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
-                            </Box>
-                            <Box sx={{ flex: 1, position: 'relative', minHeight: '60px' }}>
-                                {hourEvents.map((event, index) => (
-                                    <Paper 
-                                        key={index}
-                                        sx={{
-                                            position: 'absolute',
-                                            top: '4px',
-                                            left: `${4 + (index * 220)}px`, // Stack events horizontally
-                                            width: '200px', // Fixed width for each event
-                                            height: 'calc(100% - 8px)',
-                                            backgroundColor: event.color || '#4285F4',
-                                            color: 'white',
-                                            p: 1,
-                                            borderRadius: '4px',
-                                            fontSize: '0.875rem',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            zIndex: 1,
-                                            '&:hover': {
-                                                zIndex: 2,
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                            }
-                                        }}
-                                    >
-                                        <Typography noWrap>
-                                            {event.title}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ opacity: 0.9 }} noWrap>
-                                            {event.startTime} - {event.endTime}
-                                        </Typography>
-                                    </Paper>
-                                ))}
-                            </Box>
-                        </Box>
-                    );
-                })}
-            </Box>
+            return (
+              <Box 
+                key={hour} 
+                sx={{ 
+                  display: 'flex', 
+                  borderBottom: '1px solid #e0e0e0',
+                  '&:last-child': {
+                    borderBottom: 'none'
+                  },
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                }}
+                onClick={() => handleOpenEventForm(hour)}
+              >
+                <Box 
+                  sx={{ 
+                    width: '60px', 
+                    p: 1, 
+                    textAlign: 'right', 
+                    color: 'text.secondary',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                </Box>
+                <Box sx={{ flex: 1, position: 'relative', minHeight: '60px' }}>
+                  {hourEvents.map((event, index) => (
+                    <Paper 
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event);
+                      }}
+                      sx={{
+                        position: 'absolute',
+                        top: '4px',
+                        left: `${4 + (index * 220)}px`,
+                        width: '200px',
+                        height: 'calc(100% - 8px)',
+                        backgroundColor: event.color || '#4285F4',
+                        color: 'white',
+                        p: 1,
+                        borderRadius: '4px',
+                        fontSize: '0.875rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        zIndex: 1,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          zIndex: 2,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          filter: 'brightness(0.9)'
+                        }
+                      }}
+                    >
+                      <Typography noWrap>
+                        {event.title}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.9 }} noWrap>
+                        {event.startTime} - {event.endTime}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            );
+          })}
         </Box>
+      </Box>
     );
-};
-  
+  };
+
   // Render agenda view
   const renderAgendaView = () => {
     return (
@@ -311,7 +342,7 @@ const renderWeekView = () => {
       </Box>
     );
   };
-  
+
   // Render the current view based on viewMode
   const renderCurrentView = () => {
     switch (viewMode) {
@@ -327,7 +358,7 @@ const renderWeekView = () => {
         return renderMonthView();
     }
   };
-  
+
   return (
     <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Top Navigation */}
@@ -369,10 +400,10 @@ const renderWeekView = () => {
         <ButtonGroup variant="outlined">
 
         <Button 
-            onClick={() => handleViewChange('Month')}
-            variant={viewMode === 'Month' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('Day')}
+            variant={viewMode === 'Day' ? 'contained' : 'outlined'}
           >
-            Month
+            Day
           </Button>
 
           <Button 
@@ -383,11 +414,15 @@ const renderWeekView = () => {
           </Button>
 
         <Button 
-            onClick={() => handleViewChange('Day')}
-            variant={viewMode === 'Day' ? 'contained' : 'outlined'}
+            onClick={() => handleViewChange('Month')}
+            variant={viewMode === 'Month' ? 'contained' : 'outlined'}
           >
-            Day
+            Month
           </Button>
+
+          
+
+        
       
           <Button 
             onClick={() => handleViewChange('Agenda')}
@@ -411,6 +446,16 @@ const renderWeekView = () => {
         initialDate={currentDate.toISOString().split('T')[0]}
         initialTime={selectedTime}
       />
+
+      {viewMode === 'Day' && (
+        <TaskDetailsModal
+          open={openTaskModal}
+          onClose={() => setOpenTaskModal(false)}
+          task={selectedEvent}
+          onUpdate={handleTaskUpdate}
+          onDelete={handleTaskDelete}
+        />
+      )}
     </Box>
   );
 };
