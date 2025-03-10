@@ -21,7 +21,7 @@ import {
   ListItemText,
   Chip,
   Checkbox,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DateRangeIcon from '@mui/icons-material/DateRange';
@@ -42,15 +42,10 @@ const colorOptions = [
   { name: 'Purple', value: '#8E24AA' },
   { name: 'Orange', value: '#FF9800' },
   { name: 'Teal', value: '#009688' },
-  { name: 'Pink', value: '#E91E63' }
+  { name: 'Pink', value: '#E91E63' },
 ];
 
-const durationOptions = [
-  '1 hour',
-  '1.5 hours',
-  '2 hours',
-  '2.5 hours'
-];
+const durationOptions = ['1 hour', '1.5 hours', '2 hours', '2.5 hours'];
 
 // Mock data for teachers, subjects, branches, and students
 const teacherOptions = [
@@ -58,7 +53,7 @@ const teacherOptions = [
   'Mrs. Patel',
   'Dr. Singh',
   'Ms. Desai',
-  'Mr. Kumar'
+  'Mr. Kumar',
 ];
 
 const subjectOptions = [
@@ -71,7 +66,7 @@ const subjectOptions = [
   'Physics',
   'Chemistry',
   'Biology',
-  'Economics'
+  'Economics',
 ];
 
 const branchOptions = [
@@ -79,7 +74,7 @@ const branchOptions = [
   'North Campus',
   'South Campus',
   'East Wing',
-  'West Wing'
+  'West Wing',
 ];
 
 const studentOptions = [
@@ -92,13 +87,26 @@ const studentOptions = [
   'Rahul',
   'Neha',
   'Vikram',
-  'Pooja'
+  'Pooja',
 ];
 
-const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teachers = [], initialTeacherId = null }) => {
+const NewEventForm = ({
+  open,
+  onClose,
+  onSubmit,
+  initialDate,
+  initialTime,
+  teachers = [],
+  initialTeacherId = null,
+}) => {
   const today = new Date();
-  const formattedDate = initialDate || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  
+  const formattedDate =
+    initialDate ||
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+      2,
+      '0',
+    )}-${String(today.getDate()).padStart(2, '0')}`;
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -112,29 +120,31 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
     branch: '',
     students: [],
     location: '',
-    color: '#4285F4'
+    color: '#4285F4',
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
-  
+
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       date: initialDate || formattedDate,
-      startTime: initialTime || prev.startTime
+      startTime: initialTime || prev.startTime,
     }));
   }, [initialDate, initialTime, formattedDate]);
 
   useEffect(() => {
     if (initialTeacherId && teachers && teachers.length > 0) {
-      const selectedTeacher = teachers.find(teacher => teacher.id === initialTeacherId);
+      const selectedTeacher = teachers.find(
+        (teacher) => teacher.id === initialTeacherId,
+      );
       if (selectedTeacher) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           teacher: selectedTeacher.name,
           teacherId: selectedTeacher.id,
-          color: selectedTeacher.color || prev.color
+          color: selectedTeacher.color || prev.color,
         }));
       }
     }
@@ -144,157 +154,162 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
   const [colorAnchorEl, setColorAnchorEl] = useState(null);
   const [studentAnchorEl, setStudentAnchorEl] = useState(null);
   const [teacherAnchorEl, setTeacherAnchorEl] = useState(null);
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
-    
+
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: '',
       });
     }
 
     if (name === 'startTime' || name === 'duration') {
-      calculateEndTime(name === 'startTime' ? value : formData.startTime, name === 'duration' ? value : formData.duration);
+      calculateEndTime(
+        name === 'startTime' ? value : formData.startTime,
+        name === 'duration' ? value : formData.duration,
+      );
     }
   };
-  
+
   const calculateEndTime = (startTime, duration) => {
     if (!startTime || !duration) return;
-    
+
     const durationHours = parseFloat(duration.split(' ')[0]);
-    
+
     if (isNaN(durationHours)) return;
-    
+
     const [hours, minutes] = startTime.split(':').map(Number);
     const startDate = new Date();
     startDate.setHours(hours, minutes, 0, 0);
-    
-    const endDate = new Date(startDate.getTime() + durationHours * 60 * 60 * 1000);
-    
+
+    const endDate = new Date(
+      startDate.getTime() + durationHours * 60 * 60 * 1000,
+    );
+
     const endHours = endDate.getHours().toString().padStart(2, '0');
     const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
     const endTime = `${endHours}:${endMinutes}`;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      endTime: endTime
+      endTime: endTime,
     }));
   };
-  
+
   const handleColorClick = (event) => {
     setColorAnchorEl(event.currentTarget);
   };
-  
+
   const handleColorClose = () => {
     setColorAnchorEl(null);
   };
-  
+
   const handleColorSelect = (color) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      color: color
+      color: color,
     }));
     handleColorClose();
   };
-  
+
   const handleStudentClick = (event) => {
     setStudentAnchorEl(event.currentTarget);
-    setSearchQuery(''); 
+    setSearchQuery('');
   };
-  
+
   const handleStudentClose = () => {
     setStudentAnchorEl(null);
   };
-  
+
   const handleStudentToggle = (student) => {
     const currentStudents = [...formData.students];
     const studentIndex = currentStudents.indexOf(student);
-    
+
     if (studentIndex === -1) {
       currentStudents.push(student);
     } else {
       currentStudents.splice(studentIndex, 1);
     }
-    
+
     setFormData({
       ...formData,
-      students: currentStudents
+      students: currentStudents,
     });
   };
-  
+
   const handleRemoveStudent = (student) => {
     const currentStudents = [...formData.students];
     const studentIndex = currentStudents.indexOf(student);
-    
+
     if (studentIndex !== -1) {
       currentStudents.splice(studentIndex, 1);
       setFormData({
         ...formData,
-        students: currentStudents
+        students: currentStudents,
       });
     }
   };
-  
+
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
-  
+
   const handleTeacherClick = (event) => {
     setTeacherAnchorEl(event.currentTarget);
-    setTeacherSearchQuery(''); 
+    setTeacherSearchQuery('');
   };
-  
+
   const handleTeacherClose = () => {
     setTeacherAnchorEl(null);
   };
-  
+
   const handleTeacherSelect = (teacherName, teacherId, teacherColor) => {
     setFormData({
       ...formData,
       teacher: teacherName,
       teacherId: teacherId,
-      color: teacherColor || formData.color
+      color: teacherColor || formData.color,
     });
     handleTeacherClose();
   };
-  
+
   const handleTeacherSearchChange = (event) => {
     setTeacherSearchQuery(event.target.value);
   };
-  
-  const filteredStudents = studentOptions.filter(student => 
-    student.toLowerCase().includes(searchQuery.toLowerCase())
+
+  const filteredStudents = studentOptions.filter((student) =>
+    student.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  
-  const filteredTeachers = teachers.filter(teacher => 
-    teacher.name.toLowerCase().includes(teacherSearchQuery.toLowerCase())
+
+  const filteredTeachers = teachers.filter((teacher) =>
+    teacher.name.toLowerCase().includes(teacherSearchQuery.toLowerCase()),
   );
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
     }
-    
+
     if (!formData.date) {
       newErrors.date = 'Date is required';
     }
-    
+
     if (!formData.startTime) {
       newErrors.startTime = 'Start time is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = () => {
     if (validateForm()) {
       const eventData = {
@@ -302,66 +317,70 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
         color: formData.color,
         teacherId: formData.teacherId,
         students: formData.students.map((student, index) => {
-          if (typeof student === 'object' && student !== null && 
-              student.hasOwnProperty('id') && 
-              student.hasOwnProperty('name')) {
+          if (
+            typeof student === 'object' &&
+            student !== null &&
+            student.hasOwnProperty('id') &&
+            student.hasOwnProperty('name')
+          ) {
             return {
               ...student,
-              attendance: student.attendance || 'present' 
+              attendance: student.attendance || 'absent',
             };
           }
-          
+
           return {
             id: index,
             name: typeof student === 'string' ? student : '',
-            attendance: 'present' 
+            attendance: 'absent',
           };
-        })
+        }),
       };
-      
+
       onSubmit(eventData);
-      onClose(); 
+      onClose();
     }
   };
-  
+
   const colorOpen = Boolean(colorAnchorEl);
   const studentOpen = Boolean(studentAnchorEl);
   const teacherOpen = Boolean(teacherAnchorEl);
-  
+
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: '8px',
           overflow: 'visible',
           width: '700px',
-          maxWidth: '90vw'
-        }
+          maxWidth: '90vw',
+        },
       }}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        p: 2,
-        backgroundColor: formData.color,
-        color: '#ffffff'
-      }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          p: 2,
+          backgroundColor: formData.color,
+          color: '#ffffff',
+        }}
+      >
         <Typography variant="h6">Create New Event</Typography>
 
         <IconButton onClick={onClose} sx={{ color: '#ffffff' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent dividers>
         <Box sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}></Box>
           <TextField
             name="title"
             label="Title"
@@ -373,7 +392,7 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
             helperText={errors.title}
             sx={{ mb: 2 }}
           />
-          
+
           <TextField
             name="description"
             label="Description"
@@ -385,11 +404,13 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
             margin="normal"
             sx={{ mb: 2 }}
           />
-          
+
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={4}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <AccessTimeIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
+                <AccessTimeIcon
+                  sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
+                />
                 <TextField
                   name="startTime"
                   label="Start Time"
@@ -423,10 +444,12 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                 </Select>
               </FormControl>
             </Grid>
-            
-           <Grid item xs={12} sm={4}>
+
+            <Grid item xs={12} sm={4}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <AccessTimeIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
+                <AccessTimeIcon
+                  sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
+                />
                 <TextField
                   name="endTime"
                   label="End Time"
@@ -442,22 +465,22 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
               </Box>
             </Grid>
           </Grid>
-          
+
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 <PersonIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
-                  <Box 
+                  <Box
                     onClick={handleTeacherClick}
-                    sx={{ 
+                    sx={{
                       border: '1px solid #ccc',
                       borderRadius: '4px',
                       p: 1,
                       minHeight: '56px',
                       cursor: 'pointer',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
                     }}
                   >
                     {formData.teacher ? formData.teacher : 'Select Teacher'}
@@ -491,20 +514,28 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                       <List sx={{ maxHeight: '300px', overflow: 'auto' }}>
                         {filteredTeachers.length > 0 ? (
                           filteredTeachers.map((teacher) => (
-                            <ListItem 
-                              key={teacher.id} 
-                              dense 
-                              button 
-                              onClick={() => handleTeacherSelect(teacher.name, teacher.id, teacher.color)}
+                            <ListItem
+                              key={teacher.id}
+                              dense
+                              button
+                              onClick={() =>
+                                handleTeacherSelect(
+                                  teacher.name,
+                                  teacher.id,
+                                  teacher.color,
+                                )
+                              }
                               sx={{
-                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+                                '&:hover': {
+                                  backgroundColor: 'rgba(0,0,0,0.04)',
+                                },
                               }}
                             >
-                              <Box 
-                                sx={{ 
-                                  width: 24, 
-                                  height: 24, 
-                                  borderRadius: '50%', 
+                              <Box
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: '50%',
                                   backgroundColor: teacher.color || '#ccc',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -512,10 +543,13 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                                   color: 'white',
                                   fontWeight: 'bold',
                                   mr: 1,
-                                  fontSize: '0.75rem'
+                                  fontSize: '0.75rem',
                                 }}
                               >
-                                {teacher.name.split(' ').map(part => part[0]).join('')}
+                                {teacher.name
+                                  .split(' ')
+                                  .map((part) => part[0])
+                                  .join('')}
                               </Box>
                               <ListItemText primary={teacher.name} />
                             </ListItem>
@@ -553,11 +587,13 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
               </Box>
             </Grid>
           </Grid>
-          
+
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <AccountTreeIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
+                <AccountTreeIcon
+                  sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
+                />
                 <FormControl fullWidth margin="normal">
                   <InputLabel id="branch-label">Branch</InputLabel>
                   <Select
@@ -580,15 +616,15 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 <GroupIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
-                  <Box 
+                  <Box
                     onClick={handleStudentClick}
-                    sx={{ 
+                    sx={{
                       border: '1px solid #ccc',
                       borderRadius: '4px',
                       p: 1,
-                    //   mt: 1,
+                      //   mt: 1,
                       minHeight: '56px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     {formData.students.length > 0 ? (
@@ -605,7 +641,6 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                     ) : (
                       <Typography color="text.secondary" sx={{ p: 1 }}>
                         Select students
-                        
                       </Typography>
                     )}
                   </Box>
@@ -638,11 +673,18 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                       <List sx={{ maxHeight: '300px', overflow: 'auto' }}>
                         {filteredStudents.length > 0 ? (
                           filteredStudents.map((student) => (
-                            <ListItem key={student} dense button onClick={() => handleStudentToggle(student)}>
+                            <ListItem
+                              key={student}
+                              dense
+                              button
+                              onClick={() => handleStudentToggle(student)}
+                            >
                               <ListItemIcon>
                                 <Checkbox
                                   edge="start"
-                                  checked={formData.students.indexOf(student) !== -1}
+                                  checked={
+                                    formData.students.indexOf(student) !== -1
+                                  }
                                   tabIndex={-1}
                                   disableRipple
                                 />
@@ -662,11 +704,13 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
               </Box>
             </Grid>
           </Grid>
-          
+
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <LocationOnIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
+                <LocationOnIcon
+                  sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
+                />
                 <TextField
                   name="location"
                   label="Location"
@@ -682,9 +726,9 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                 <CircleIcon sx={{ mt: 4, mr: 1, color: formData.color }} />
                 <FormControl fullWidth margin="normal">
                   <InputLabel shrink>Color</InputLabel>
-                  <Box 
+                  <Box
                     onClick={handleColorClick}
-                    sx={{ 
+                    sx={{
                       border: '1px solid #ccc',
                       borderRadius: '4px',
                       p: 1,
@@ -694,7 +738,7 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                       cursor: 'pointer',
                       backgroundColor: formData.color,
                       color: '#ffffff',
-                      minHeight: '40px'
+                      minHeight: '40px',
                     }}
                   >
                     Select Color
@@ -708,12 +752,14 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                       horizontal: 'left',
                     }}
                   >
-                    <Box sx={{ 
-                      p: 2, 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(4, 1fr)', 
-                      gap: 1 
-                    }}>
+                    <Box
+                      sx={{
+                        p: 2,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
+                        gap: 1,
+                      }}
+                    >
                       {colorOptions.map((color) => (
                         <Box
                           key={color.value}
@@ -724,10 +770,13 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
                             backgroundColor: color.value,
                             borderRadius: '50%',
                             cursor: 'pointer',
-                            border: formData.color === color.value ? '2px solid #000' : 'none',
+                            border:
+                              formData.color === color.value
+                                ? '2px solid #000'
+                                : 'none',
                             '&:hover': {
-                              opacity: 0.8
-                            }
+                              opacity: 0.8,
+                            },
                           }}
                         />
                       ))}
@@ -739,18 +788,18 @@ const NewEventForm = ({ open, onClose, onSubmit, initialDate, initialTime, teach
           </Grid>
         </Box>
       </DialogContent>
-      
+
       <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           color="primary"
-          sx={{ 
+          sx={{
             borderRadius: '4px',
-            textTransform: 'none'
+            textTransform: 'none',
           }}
         >
           Save

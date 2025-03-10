@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  ButtonGroup, 
-  Paper, 
+import {
+  Box,
+  Typography,
+  Button,
+  ButtonGroup,
+  Paper,
   Grid,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -16,14 +16,23 @@ import Week from './Week';
 import NewEventForm from './NewEventForm';
 import TaskDetailsModal from './TaskDetailsModal';
 
-const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, onDeleteEvent, teachers, viewMode = 'Month', onViewChange }) => {
+const CalanderRight = ({
+  events = [],
+  selectedDate,
+  onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
+  teachers,
+  viewMode = 'Month',
+  onViewChange,
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openEventForm, setOpenEventForm] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [openTaskModal, setOpenTaskModal] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState(null);
-  
+
   // Log events for debugging
   useEffect(() => {
     if (selectedDate) {
@@ -34,15 +43,19 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   useEffect(() => {
     console.log('Events in CalanderRight:', events);
   }, [events]);
-  
+
   // Format date to display month and year
   const formatMonthYear = (date) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
-  
+
   // Format date for the day view
   const formatDay = (date) => {
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   };
 
   // Navigate to previous period (day, week, month)
@@ -82,63 +95,67 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
       onViewChange(mode);
     }
   };
-  
+
   // Helper function to normalize date objects or strings to Date objects
   const normalizeDate = (dateInput) => {
     if (!dateInput) return null;
     return dateInput instanceof Date ? dateInput : new Date(dateInput);
   };
-  
+
   // Compare two dates (ignoring time)
   const isSameDay = (date1, date2) => {
     const d1 = normalizeDate(date1);
     const d2 = normalizeDate(date2);
     if (!d1 || !d2) return false;
-    
-    return d1.getDate() === d2.getDate() && 
-           d1.getMonth() === d2.getMonth() && 
-           d1.getFullYear() === d2.getFullYear();
+
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
   };
-  
+
   // Filter events for the current month
   const getMonthEvents = () => {
-    return events.filter(event => {
+    return events.filter((event) => {
       const eventDate = normalizeDate(event.date);
       if (!eventDate) return false;
-      
-      return eventDate.getMonth() === currentDate.getMonth() && 
-             eventDate.getFullYear() === currentDate.getFullYear();
+
+      return (
+        eventDate.getMonth() === currentDate.getMonth() &&
+        eventDate.getFullYear() === currentDate.getFullYear()
+      );
     });
   };
-  
+
   // Filter events for the current week
   const getWeekEvents = () => {
     const weekStart = new Date(currentDate);
     weekStart.setDate(currentDate.getDate() - currentDate.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    
+
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
-    
-    return events.filter(event => {
+
+    return events.filter((event) => {
       const eventDate = normalizeDate(event.date);
       if (!eventDate) return false;
-      
+
       return eventDate >= weekStart && eventDate <= weekEnd;
     });
   };
-  
+
   // Filter events for the current day
   const getDayEvents = () => {
-    return events.filter(event => {
+    return events.filter((event) => {
       const eventDate = normalizeDate(event.date);
       if (!eventDate) return false;
-      
+
       return isSameDay(eventDate, currentDate);
     });
   };
-  
+
   // Handle opening the event form
   const handleOpenEventForm = (hour, teacherId = null) => {
     // Format the hour to HH:MM format
@@ -152,7 +169,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
     setOpenEventForm(false);
   };
 
-  // Handle submitting the event form  
+  // Handle submitting the event form
   const handleSubmitEvent = (eventData) => {
     handleCloseEventForm(); // Close the form
     if (onAddEvent) {
@@ -189,10 +206,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   const renderMonthView = () => {
     return (
       <Box sx={{ p: 2 }}>
-        <Month 
-          currentDate={currentDate}
-          events={getMonthEvents()}
-        />
+        <Month currentDate={currentDate} events={getMonthEvents()} />
       </Box>
     );
   };
@@ -201,10 +215,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   const renderWeekView = () => {
     return (
       <Box sx={{ height: 'calc(100vh - 130px)', overflowY: 'auto' }}>
-        <Week 
-          currentDate={currentDate}
-          events={getWeekEvents()}
-        />
+        <Week currentDate={currentDate} events={getWeekEvents()} />
       </Box>
     );
   };
@@ -212,73 +223,86 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   // Render day view
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const activeTeachers = teachers ? teachers.filter(teacher => teacher.checked) : [];
-    
+    const activeTeachers = teachers
+      ? teachers.filter((teacher) => teacher.checked)
+      : [];
+
     // Always show at least one column, even if no teachers are selected
     return (
-      <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: activeTeachers.length > 0 
-          ? `80px repeat(${activeTeachers.length}, 1fr)` 
-          : '80px 1fr', // One column for time + one empty column
-        gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
-        border: '1px solid #e0e0e0',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        height: '100%', // Take full height of parent container
-        width: '100%', // Take full width
-        overflowY: 'auto'
-      }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns:
+            activeTeachers.length > 0
+              ? `80px repeat(${activeTeachers.length}, 1fr)`
+              : '80px 1fr', // One column for time + one empty column
+          gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
+          border: '1px solid #e0e0e0',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          height: '100%', // Take full height of parent container
+          width: '100%', // Take full width
+          overflowY: 'auto',
+        }}
+      >
         {/* Empty top-left cell */}
-        <Box sx={{ 
-          gridColumn: '1 / 2', 
-          gridRow: '1 / 2',
-          borderRight: '1px solid #e0e0e0',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: '#f5f5f5',
-          p: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+        <Box
+          sx={{
+            gridColumn: '1 / 2',
+            gridRow: '1 / 2',
+            borderRight: '1px solid #e0e0e0',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#f5f5f5',
+            p: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Typography variant="body2" fontWeight="bold">
             Time
           </Typography>
         </Box>
-        
+
         {/* Teacher Headers - only show if there are active teachers */}
         {activeTeachers.length > 0 ? (
           activeTeachers.map((teacher, index) => (
-            <Box 
+            <Box
               key={teacher.id}
-              sx={{ 
+              sx={{
                 gridColumn: `${index + 2} / ${index + 3}`,
                 gridRow: '1 / 2',
-                borderRight: index < activeTeachers.length - 1 ? '1px solid #e0e0e0' : 'none',
+                borderRight:
+                  index < activeTeachers.length - 1
+                    ? '1px solid #e0e0e0'
+                    : 'none',
                 borderBottom: '1px solid #e0e0e0',
                 backgroundColor: '#f5f5f5',
                 p: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexDirection: 'column'
+                flexDirection: 'column',
               }}
             >
-              <Box 
-                sx={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
                   backgroundColor: teacher.color || '#ccc',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
                   fontWeight: 'bold',
-                  mb: 1
+                  mb: 1,
                 }}
               >
-                {teacher.name.split(' ').map(part => part[0]).join('')}
+                {teacher.name
+                  .split(' ')
+                  .map((part) => part[0])
+                  .join('')}
               </Box>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }} noWrap>
                 {teacher.name}
@@ -287,8 +311,8 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
           ))
         ) : (
           // Empty header when no teachers are selected
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               gridColumn: '2 / 3',
               gridRow: '1 / 2',
               borderBottom: '1px solid #e0e0e0',
@@ -296,7 +320,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
               p: 1,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
             }}
           >
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -304,14 +328,14 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
             </Typography>
           </Box>
         )}
-        
+
         {/* Hour cells - always show */}
-        {hours.map(hour => {
+        {hours.map((hour) => {
           return (
             <React.Fragment key={hour}>
               {/* Hour label */}
-              <Box 
-                sx={{ 
+              <Box
+                sx={{
                   gridColumn: '1 / 2',
                   gridRow: `${hour + 2} / ${hour + 3}`,
                   borderRight: '1px solid #e0e0e0',
@@ -320,48 +344,57 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
                   p: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
                 }}
               >
                 <Typography variant="body2">
-                  {hour === 0 ? '12 AM' : 
-                   hour < 12 ? `${hour} AM` : 
-                   hour === 12 ? '12 PM' : 
-                   `${hour - 12} PM`}
+                  {hour === 0
+                    ? '12 AM'
+                    : hour < 12
+                    ? `${hour} AM`
+                    : hour === 12
+                    ? '12 PM'
+                    : `${hour - 12} PM`}
                 </Typography>
               </Box>
-              
+
               {/* Teacher cells - only show if there are active teachers */}
               {activeTeachers.length > 0 ? (
                 activeTeachers.map((teacher, index) => {
                   // Find events for this teacher at this hour
-                  const teacherEvents = events.filter(event => {
-                    if (!event.startTime || typeof event.startTime !== 'string') return false;
-                    
+                  const teacherEvents = events.filter((event) => {
+                    if (!event.startTime || typeof event.startTime !== 'string')
+                      return false;
+
                     const timeParts = event.startTime.split(':');
                     const eventHour = parseInt(timeParts[0], 10);
-                    
+
                     // Check if event is for this teacher and hour
-                    return !isNaN(eventHour) && 
-                          eventHour === hour && 
-                          event.teacherId === teacher.id;
+                    return (
+                      !isNaN(eventHour) &&
+                      eventHour === hour &&
+                      event.teacherId === teacher.id
+                    );
                   });
-                  
+
                   return (
-                    <Box 
+                    <Box
                       key={`${hour}-${teacher.id}`}
-                      sx={{ 
+                      sx={{
                         gridColumn: `${index + 2} / ${index + 3}`,
                         gridRow: `${hour + 2} / ${hour + 3}`,
                         p: 0.5,
-                        borderRight: index < activeTeachers.length - 1 ? '1px solid #e0e0e0' : 'none',
+                        borderRight:
+                          index < activeTeachers.length - 1
+                            ? '1px solid #e0e0e0'
+                            : 'none',
                         borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
                         minHeight: '60px',
                         position: 'relative',
                         cursor: 'pointer',
                         '&:hover': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                        }
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        },
                       }}
                       onClick={() => {
                         // When clicking on an empty cell, open event form with pre-selected teacher
@@ -370,7 +403,7 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
                     >
                       {/* Display events in this cell */}
                       {teacherEvents.map((event, eventIndex) => (
-                        <Paper 
+                        <Paper
                           key={eventIndex}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -382,7 +415,8 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
                             left: '2px',
                             right: '2px',
                             height: 'calc(100% - 4px)',
-                            backgroundColor: event.color || teacher.color || '#4285F4',
+                            backgroundColor:
+                              event.color || teacher.color || '#4285F4',
                             color: 'white',
                             p: 1,
                             borderRadius: '4px',
@@ -395,57 +429,85 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
                             '&:hover': {
                               zIndex: 2,
                               boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                              filter: 'brightness(0.9)'
-                            }
+                              filter: 'brightness(0.9)',
+                            },
                           }}
                         >
-                          <Typography variant="caption" sx={{ fontWeight: 'bold' }} noWrap>
+                          <Typography
+                            variant="caption"
+                            sx={{ fontWeight: 'bold' }}
+                            noWrap
+                          >
                             {event.title}
                           </Typography>
                           {event.students && event.students.length > 0 && (
-                            <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {event.students.slice(0, 3).map((student, studentIndex) => {
-                                // Handle both string format and object format as per memory requirements
-                                const studentObj = typeof student === 'string' 
-                                  ? { id: studentIndex, name: student, attendance: 'present' } 
-                                  : student;
-                                
-                                return (
-                                  <Box 
-                                    key={studentObj.id || studentIndex}
-                                    sx={{ 
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      backgroundColor: 'rgba(255,255,255,0.2)',
-                                      borderRadius: '4px',
-                                      px: 0.5,
-                                      fontSize: '0.7rem'
-                                    }}
-                                  >
-                                    {studentObj.name}
-                                    {studentObj.attendance && (
-                                      <Box 
-                                        sx={{ 
-                                          ml: 0.5,
-                                          width: 14,
-                                          height: 14,
-                                          borderRadius: '50%',
-                                          backgroundColor: studentObj.attendance === 'present' ? '#4CAF50' : '#F44336',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '0.6rem',
-                                          fontWeight: 'bold'
-                                        }}
-                                      >
-                                        {studentObj.attendance === 'present' ? 'P' : 'A'}
-                                      </Box>
-                                    )}
-                                  </Box>
-                                );
-                              })}
+                            <Box
+                              sx={{
+                                mt: 0.5,
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 0.5,
+                              }}
+                            >
+                              {event.students
+                                .slice(0, 3)
+                                .map((student, studentIndex) => {
+                                  // Handle both string format and object format as per memory requirements
+                                  const studentObj =
+                                    typeof student === 'string'
+                                      ? {
+                                          id: studentIndex,
+                                          name: student,
+                                          attendance: 'present',
+                                        }
+                                      : student;
+
+                                  return (
+                                    <Box
+                                      key={studentObj.id || studentIndex}
+                                      sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        backgroundColor:
+                                          'rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        px: 0.5,
+                                        fontSize: '0.7rem',
+                                      }}
+                                    >
+                                      {studentObj.name}
+                                      {studentObj.attendance && (
+                                        <Box
+                                          sx={{
+                                            ml: 0.5,
+                                            width: 14,
+                                            height: 14,
+                                            borderRadius: '50%',
+                                            backgroundColor:
+                                              studentObj.attendance ===
+                                              'present'
+                                                ? '#4CAF50'
+                                                : '#F44336',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '0.6rem',
+                                            fontWeight: 'bold',
+                                          }}
+                                        >
+                                          {studentObj.attendance === 'present'
+                                            ? 'P'
+                                            : 'A'}
+                                        </Box>
+                                      )}
+                                    </Box>
+                                  );
+                                })}
                               {event.students.length > 3 && (
-                                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ opacity: 0.9 }}
+                                >
                                   +{event.students.length - 3}
                                 </Typography>
                               )}
@@ -458,21 +520,23 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
                 })
               ) : (
                 // Empty cell when no teachers are selected
-                <Box 
+                <Box
                   key={`${hour}-empty`}
-                  sx={{ 
+                  sx={{
                     gridColumn: '2 / 3',
                     gridRow: `${hour + 2} / ${hour + 3}`,
                     borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
                     minHeight: '60px',
                     cursor: 'pointer',
                     '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    }
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
                   }}
                   onClick={() => {
                     // When clicking on an empty cell with no teachers, show a message
-                    alert('Please select at least one teacher from the sidebar to create an event.');
+                    alert(
+                      'Please select at least one teacher from the sidebar to create an event.',
+                    );
                   }}
                 />
               )}
@@ -487,10 +551,8 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   const renderAgendaView = () => {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography variant="h6">
-          Agenda View
-        </Typography>
-        
+        <Typography variant="h6">Agenda View</Typography>
+
         {/* Display events in a list */}
         {events.length === 0 ? (
           <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
@@ -498,19 +560,20 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
           </Typography>
         ) : (
           events.map((event, index) => (
-            <Paper 
+            <Paper
               key={index}
-              sx={{ 
-                p: 2, 
-                mb: 2, 
-                borderLeft: `4px solid ${event.color || '#4285F4'}`
+              sx={{
+                p: 2,
+                mb: 2,
+                borderLeft: `4px solid ${event.color || '#4285F4'}`,
               }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 {event.title}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {normalizeDate(event.date)?.toLocaleDateString()} • {event.startTime} - {event.endTime}
+                {normalizeDate(event.date)?.toLocaleDateString()} •{' '}
+                {event.startTime} - {event.endTime}
               </Typography>
               {event.description && (
                 <Typography variant="body2" sx={{ mt: 1 }}>
@@ -533,12 +596,14 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
         return renderWeekView();
       case 'Day':
         return (
-          <Box sx={{ 
-            height: '100%', // Take full height
-            width: '100%', // Take full width
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+          <Box
+            sx={{
+              height: '100%', // Take full height
+              width: '100%', // Take full width
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             {renderDayView()}
           </Box>
         );
@@ -550,100 +615,176 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
   };
 
   return (
-    <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Top Navigation */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 2, 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid #e0e0e0'
+          borderBottom: '1px solid #e0e0e0',
         }}
       >
         {/* Left side - Today button and navigation */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button 
-            variant="outlined" 
-            size="small" 
+          <Button
+            //   variant="outlined"
+            //   size="small"
+            //   onClick={handleToday}
+            //   sx={{ mr: 2, textTransform: 'none' }}
+            // >
+            //   Today
             onClick={handleToday}
-            sx={{ mr: 2, textTransform: 'none' }}
+            sx={{
+              textTransform: 'none',
+              px: 3,
+              borderColor: viewMode === 'Today' ? 'transparent' : '#e0e0e0',
+              backgroundColor: viewMode === 'Today' ? '#000066' : 'white',
+              color: viewMode === 'Today' ? 'white' : '#000066',
+              '&:hover': {
+                backgroundColor: viewMode === 'Today' ? '#000066' : '#f5f5f5',
+                borderColor: viewMode === 'Today' ? 'transparent' : '#e0e0e0',
+              },
+              fontWeight: 'bold',
+            }}
           >
-            Today
+            Tooday
           </Button>
-          
+
           <IconButton onClick={handlePrevious} size="small">
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
-          
+
           <IconButton onClick={handleNext} size="small" sx={{ mr: 2 }}>
             <ArrowForwardIosIcon fontSize="small" />
           </IconButton>
-          
+
           <Typography variant="h6" sx={{ fontWeight: 'normal' }}>
-            {viewMode === 'Day' ? formatDay(currentDate) : formatMonthYear(currentDate)}
+            {viewMode === 'Day'
+              ? formatDay(currentDate)
+              : formatMonthYear(currentDate)}
           </Typography>
         </Box>
-        
-        {/* Right side - View mode buttons */}
-        <ButtonGroup variant="outlined">
 
-        <Button 
-            onClick={() => handleViewChange('Day')}
-            variant={viewMode === 'Day' ? 'contained' : 'outlined'}
+        {/* Right side - View mode buttons with updated styling */}
+        <Box sx={{ display: 'flex' }}>
+          <ButtonGroup
+            variant="outlined"
+            sx={{
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            }}
           >
-            Day
-          </Button>
+            <Button
+              onClick={() => handleViewChange('Day')}
+              sx={{
+                textTransform: 'none',
+                px: 3,
+                borderColor: viewMode === 'Day' ? 'transparent' : '#e0e0e0',
+                backgroundColor: viewMode === 'Day' ? '#000066' : 'white',
+                color: viewMode === 'Day' ? 'white' : '#000066',
+                '&:hover': {
+                  backgroundColor: viewMode === 'Day' ? '#000066' : '#f5f5f5',
+                  borderColor: viewMode === 'Day' ? 'transparent' : '#e0e0e0',
+                },
+                fontWeight: 'bold',
+              }}
+            >
+              Day
+            </Button>
 
-          <Button 
-            onClick={() => handleViewChange('Week')}
-            variant={viewMode === 'Week' ? 'contained' : 'outlined'}
-          >
-            Week
-          </Button>
+            <Button
+              onClick={() => handleViewChange('Week')}
+              sx={{
+                textTransform: 'none',
+                px: 3,
+                borderColor: viewMode === 'Week' ? 'transparent' : '#e0e0e0',
+                backgroundColor: viewMode === 'Week' ? '#3366cc' : 'white',
+                color: viewMode === 'Week' ? 'white' : '#3366cc',
+                '&:hover': {
+                  backgroundColor: viewMode === 'Week' ? '#3366cc' : '#f5f5f5',
+                  borderColor: viewMode === 'Week' ? 'transparent' : '#e0e0e0',
+                },
+                fontWeight: 'bold',
+              }}
+            >
+              Week
+            </Button>
 
-        <Button 
-            onClick={() => handleViewChange('Month')}
-            variant={viewMode === 'Month' ? 'contained' : 'outlined'}
-          >
-            Month
-          </Button>
+            <Button
+              onClick={() => handleViewChange('Month')}
+              sx={{
+                textTransform: 'none',
+                px: 3,
+                borderColor: viewMode === 'Month' ? 'transparent' : '#e0e0e0',
+                backgroundColor: viewMode === 'Month' ? '#ffcc00' : 'white',
+                color: viewMode === 'Month' ? '#000000' : '#ffcc00',
+                '&:hover': {
+                  backgroundColor: viewMode === 'Month' ? '#ffcc00' : '#f5f5f5',
+                  borderColor: viewMode === 'Month' ? 'transparent' : '#e0e0e0',
+                },
+                fontWeight: 'bold',
+              }}
+            >
+              Month
+            </Button>
 
-          
-
-        
-      
-          <Button 
-            onClick={() => handleViewChange('Agenda')}
-            variant={viewMode === 'Agenda' ? 'contained' : 'outlined'}
-          >
-            Agenda
-          </Button>
-        </ButtonGroup>
+            <Button
+              onClick={() => handleViewChange('Agenda')}
+              sx={{
+                textTransform: 'none',
+                px: 3,
+                borderColor: viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
+                backgroundColor: viewMode === 'Agenda' ? '#000066' : 'white',
+                color: viewMode === 'Agenda' ? 'white' : '#000066',
+                '&:hover': {
+                  backgroundColor:
+                    viewMode === 'Agenda' ? '#000066' : '#f5f5f5',
+                  borderColor:
+                    viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
+                },
+                fontWeight: 'bold',
+              }}
+            >
+              Agenda
+            </Button>
+          </ButtonGroup>
+        </Box>
       </Paper>
-      
+
       {/* Calendar Content */}
-      <Box sx={{ 
-        flexGrow: 1, 
-        overflow: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-        height: 'calc(100vh - 130px)' // Adjust height to take remaining space
-      }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          height: 'calc(100vh - 130px)', // Adjust height to take remaining space
+        }}
+      >
         {renderCurrentView()}
       </Box>
 
       {/* New Event Form Dialog */}
-      <NewEventForm 
-        open={openEventForm} 
-        onClose={handleCloseEventForm} 
-        onSubmit={handleSubmitEvent} 
+      <NewEventForm
+        open={openEventForm}
+        onClose={handleCloseEventForm}
+        onSubmit={handleSubmitEvent}
         initialDate={currentDate.toISOString().split('T')[0]}
         initialTime={selectedTime}
-        teachers={teachers} 
-        initialTeacherId={selectedTeacherId} 
+        teachers={teachers}
+        initialTeacherId={selectedTeacherId}
       />
 
       {viewMode === 'Day' && (
@@ -658,4 +799,5 @@ const CalanderRight = ({ events = [], selectedDate, onAddEvent, onUpdateEvent, o
     </Box>
   );
 };
+
 export default CalanderRight;
