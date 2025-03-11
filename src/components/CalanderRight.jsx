@@ -41,6 +41,31 @@ const CalanderRight = ({
   const [clickedWhatsAppEvents, setClickedWhatsAppEvents] = useState({}); // Add state to track clicked WhatsApp icons
   const [sentEvents, setSentEvents] = useState({}); // Add state to track events marked as sent
 
+  // Add state for teacher leave data
+  const [teacherLeaveData, setTeacherLeaveData] = useState([]);
+
+  // Static test data for teacher leaves
+  useEffect(() => {
+    // In a real application, this would come from an API call
+    const staticLeaveData = [
+      {
+        teacherId: teachers && teachers.length > 0 ? teachers[0].id : null, // First teacher
+        date: new Date().toISOString().split('T')[0], // Today
+        status: 'leave',
+      },
+      {
+        teacherId: teachers && teachers.length > 1 ? teachers[1].id : null, // Second teacher
+        date: new Date(new Date().setDate(new Date().getDate() + 5))
+          .toISOString()
+          .split('T')[0], // 5 days from today
+        status: 'leave',
+      },
+      // Add more test data as needed
+    ];
+
+    setTeacherLeaveData(staticLeaveData);
+  }, [teachers]);
+
   // Log events for debugging
   useEffect(() => {
     if (selectedDate) {
@@ -191,11 +216,11 @@ const CalanderRight = ({
   //handle event for whatspp
   const handleWhatsAppClick = (event) => {
     // Toggle the clicked state for this event
-    setClickedWhatsAppEvents(prev => ({
+    setClickedWhatsAppEvents((prev) => ({
       ...prev,
-      [event.id]: !prev[event.id]
+      [event.id]: !prev[event.id],
     }));
-    
+
     // Only proceed with WhatsApp sharing if the icon hasn't been clicked before
     if (!clickedWhatsAppEvents[event.id]) {
       // You can implement the WhatsApp sharing functionality here
@@ -210,9 +235,9 @@ const CalanderRight = ({
 
   // Handle marking an event as sent
   const handleMarkAsSent = (event) => {
-    setSentEvents(prev => ({
+    setSentEvents((prev) => ({
       ...prev,
-      [event.id]: true
+      [event.id]: true,
     }));
   };
 
@@ -236,6 +261,17 @@ const CalanderRight = ({
       onDeleteEvent(taskId);
     }
     setOpenTaskModal(false);
+  };
+
+  // Check if a teacher is on leave for the current day
+  const isTeacherOnLeave = (teacherId) => {
+    const currentDateStr = currentDate.toISOString().split('T')[0];
+    return teacherLeaveData.some(
+      (leave) =>
+        leave.teacherId === teacherId &&
+        leave.date === currentDateStr &&
+        leave.status === 'leave',
+    );
   };
 
   // Render month view
@@ -283,7 +319,10 @@ const CalanderRight = ({
             gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
             border: '1px solid #e0e0e0',
             borderRadius: '8px',
-            minWidth: activeTeachers.length > 3 ? (80 + activeTeachers.length * 150) + 'px' : '100%', 
+            minWidth:
+              activeTeachers.length > 3
+                ? 80 + activeTeachers.length * 150 + 'px'
+                : '100%',
             // ^ Ensure minimum width based on number of teachers
             height: 'max-content',
           }}
@@ -309,49 +348,75 @@ const CalanderRight = ({
 
           {/* Teacher Headers - only show if there are active teachers */}
           {activeTeachers.length > 0 ? (
-            activeTeachers.map((teacher, index) => (
-              <Box
-                key={teacher.id}
-                sx={{
-                  gridColumn: `${index + 2} / ${index + 3}`,
-                  gridRow: '1 / 2',
-                  borderRight:
-                    index < activeTeachers.length - 1
-                      ? '1px solid #e0e0e0'
-                      : 'none',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: '#f5f5f5',
-                  p: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'column',
-                }}
-              >
+            activeTeachers.map((teacher, index) => {
+              const onLeave = isTeacherOnLeave(teacher.id);
+
+              return (
                 <Box
+                  key={teacher.id}
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    backgroundColor: teacher.color || '#ccc',
+                    gridColumn: `${index + 2} / ${index + 3}`,
+                    gridRow: '1 / 2',
+                    borderRight:
+                      index < activeTeachers.length - 1
+                        ? '1px solid #e0e0e0'
+                        : 'none',
+                    borderBottom: '1px solid #e0e0e0',
+                    backgroundColor: '#f5f5f5',
+                    p: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    mb: 1,
+                    flexDirection: 'column',
+                    position: 'relative',
+                    transition: 'all 0.2s ease-in-out',
+                    overflow: 'hidden',
+                    ...(onLeave && {
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        backgroundColor: '#f44336',
+                      },
+                    }),
                   }}
                 >
-                  {teacher.name
-                    .split(' ')
-                    .map((part) => part[0])
-                    .join('')}
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      backgroundColor: teacher.color || '#ccc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      mb: 1,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    {teacher.name
+                      .split(' ')
+                      .map((part) => part[0])
+                      .join('')}
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: 'text.primary',
+                    }}
+                    noWrap
+                  >
+                    {teacher.name}
+                  </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 'bold' }} noWrap>
-                  {teacher.name}
-                </Typography>
-              </Box>
-            ))
+              );
+            })
           ) : (
             // Empty header when no teachers are selected
             <Box
@@ -406,7 +471,10 @@ const CalanderRight = ({
                   activeTeachers.map((teacher, index) => {
                     // Find events for this teacher at this hour
                     const teacherEvents = events.filter((event) => {
-                      if (!event.startTime || typeof event.startTime !== 'string')
+                      if (
+                        !event.startTime ||
+                        typeof event.startTime !== 'string'
+                      )
                         return false;
 
                       const timeParts = event.startTime.split(':');
@@ -420,6 +488,9 @@ const CalanderRight = ({
                       );
                     });
 
+                    // Check if teacher is on leave
+                    const onLeave = isTeacherOnLeave(teacher.id);
+
                     return (
                       <Box
                         key={`${hour}-${teacher.id}`}
@@ -431,16 +502,28 @@ const CalanderRight = ({
                             index < activeTeachers.length - 1
                               ? '1px solid #e0e0e0'
                               : 'none',
-                          borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
+                          borderBottom:
+                            hour < 23 ? '1px solid #e0e0e0' : 'none',
                           minHeight: '60px',
                           position: 'relative',
-                          cursor: 'pointer',
+                          cursor: 'pointer', // Always use pointer cursor
                           '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            backgroundColor: onLeave
+                              ? 'rgba(0, 0, 0, 0.02)'
+                              : 'rgba(0, 0, 0, 0.04)',
                           },
+                          backgroundColor: onLeave
+                            ? 'rgba(244, 67, 54, 0.03)'
+                            : 'transparent',
+                          opacity: onLeave ? 0.85 : 1,
+                          transition: 'all 0.2s ease-in-out',
+                          ...(onLeave && {
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(244, 67, 54, 0.03) 10px, rgba(244, 67, 54, 0.03) 20px)',
+                          }),
                         }}
                         onClick={() => {
-                          // When clicking on an empty cell, open event form with pre-selected teacher
+                          // Always allow creating events, even if teacher is on leave
                           handleOpenEventForm(hour, teacher.id);
                         }}
                       >
@@ -474,6 +557,11 @@ const CalanderRight = ({
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                                 filter: 'brightness(0.9)',
                               },
+                              opacity: onLeave ? 0.6 : 1,
+                              ...(onLeave && {
+                                filter: 'grayscale(30%)',
+                                border: '1px solid rgba(244, 67, 54, 0.3)',
+                              }),
                             }}
                           >
                             <Typography
@@ -558,6 +646,40 @@ const CalanderRight = ({
                             )}
                           </Paper>
                         ))}
+
+                        {/* Show "On Leave" indicator if teacher is on leave and no events */}
+                        {onLeave && teacherEvents.length === 0 && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              color: '#f44336',
+                              textAlign: 'center',
+                              width: '90%',
+                              backgroundColor: 'rgba(244, 67, 54, 0.05)',
+                              borderRadius: '4px',
+                              py: 0.5,
+                              px: 1,
+                              border: '1px dashed rgba(244, 67, 54, 0.3)',
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontStyle: 'italic',
+                                fontWeight: 'medium',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.5,
+                              }}
+                            >
+                              On Leave
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                     );
                   })
@@ -669,15 +791,15 @@ const CalanderRight = ({
                     }}
                     onClick={() => handleWhatsAppClick(event)}
                   />
-                  
+
                   {/* Tick icon that changes to "Sent" when clicked */}
                   {sentEvents[event.id] ? (
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#4CAF50', 
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: '#4CAF50',
                         fontWeight: 'bold',
-                        fontSize: '16px'
+                        fontSize: '16px',
                       }}
                     >
                       Sent
@@ -715,7 +837,7 @@ const CalanderRight = ({
               width: '100%', // Take full width
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden', /* Hide overflow at parent level */
+              overflow: 'hidden' /* Hide overflow at parent level */,
             }}
           >
             {renderDayView()}
@@ -879,7 +1001,7 @@ const CalanderRight = ({
       <Box
         sx={{
           flexGrow: 1,
-          overflow: 'hidden', /* Control overflow at this level */
+          overflow: 'hidden' /* Control overflow at this level */,
           display: 'flex',
           flexDirection: 'column',
           width: '100%',

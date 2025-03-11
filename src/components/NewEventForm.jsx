@@ -45,6 +45,7 @@ const colorOptions = [
   { name: 'Pink', value: '#E91E63' },
 ];
 
+// Define duration options with clear labels
 const durationOptions = ['1 hour', '1 hour 15 min', '1 hour 30 min'];
 
 // Generate time options in 30 minute increments (12:00 PM to 11:30 AM) - reversed to start with PM
@@ -155,7 +156,6 @@ const NewEventForm = ({
     date: formattedDate,
     startTime: initialTime || '',
     duration: '1 hour',
-    customDuration: '',
     endTime: '',
     teacher: '',
     teacherId: null,
@@ -172,6 +172,34 @@ const NewEventForm = ({
   const [teacherAnchorEl, setTeacherAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
+
+  // Function to calculate the end time based on start time and duration
+  const calculateEndTime = (startTime, duration) => {
+    if (!startTime) return '';
+
+    const [hours, minutes] = startTime.split(':').map(Number);
+    let minutesToAdd = 60; // Default is 1 hour
+
+    // Determine minutes to add based on selected duration
+    if (duration === '1 hour') {
+      minutesToAdd = 60;
+    } else if (duration === '1 hour 15 min') {
+      minutesToAdd = 75;
+    } else if (duration === '1 hour 30 min') {
+      minutesToAdd = 90;
+    }
+
+    // Calculate end time
+    const totalMinutes = hours * 60 + minutes + minutesToAdd;
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
+
+    // Format end time
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(
+      2,
+      '0',
+    )}`;
+  };
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -197,58 +225,45 @@ const NewEventForm = ({
     }
   }, [initialTeacherId, teachers, open]);
 
+  // Update end time whenever start time or duration changes
+  useEffect(() => {
+    if (formData.startTime) {
+      const newEndTime = calculateEndTime(
+        formData.startTime,
+        formData.duration,
+      );
+      setFormData((prev) => ({
+        ...prev,
+        endTime: newEndTime,
+      }));
+    }
+  }, [formData.startTime, formData.duration]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
+
+    // Create a new form data object with the updated value
+    const updatedFormData = {
       ...formData,
       [name]: value,
-    });
+    };
 
+    // Special handling for duration - immediate end time update
+    if (name === 'duration' && formData.startTime) {
+      const newEndTime = calculateEndTime(formData.startTime, value);
+      updatedFormData.endTime = newEndTime;
+    }
+
+    // Update form data
+    setFormData(updatedFormData);
+
+    // Clear errors
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: '',
       });
     }
-
-    if (name === 'startTime') {
-      calculateEndTime(value, formData.duration);
-    } else if (name === 'duration') {
-      calculateEndTime(formData.startTime, value);
-    }
-  };
-
-  const calculateEndTime = (startTime, duration) => {
-    if (!startTime || !duration) return;
-
-    let durationHours;
-
-    if (duration === '1 hour 30 min') {
-      durationHours = 1.5;
-    } else if (duration === '1 hour 15 min') {
-      durationHours = 1.25;
-    } else {
-      durationHours = 1; // Default to 1 hour
-    }
-
-    if (isNaN(durationHours)) return;
-
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const startDate = new Date();
-    startDate.setHours(hours, minutes, 0, 0);
-
-    const endDate = new Date(
-      startDate.getTime() + durationHours * 60 * 60 * 1000,
-    );
-
-    const endHours = endDate.getHours().toString().padStart(2, '0');
-    const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
-    const endTime = `${endHours}:${endMinutes}`;
-
-    setFormData((prev) => ({
-      ...prev,
-      endTime: endTime,
-    }));
   };
 
   const handleColorClick = (event) => {
@@ -363,7 +378,6 @@ const NewEventForm = ({
     if (validateForm()) {
       const eventData = {
         ...formData,
-        duration: formData.duration,
         color: formData.color,
         teacherId: formData.teacherId,
         students: formData.students.map((student, index) => {
@@ -395,6 +409,15 @@ const NewEventForm = ({
   const colorOpen = Boolean(colorAnchorEl);
   const studentOpen = Boolean(studentAnchorEl);
   const teacherOpen = Boolean(teacherAnchorEl);
+
+  // Find the appropriate display label for the end time
+  const getEndTimeLabel = () => {
+    if (!formData.endTime) return '';
+    const endTimeOption = timeOptions.find(
+      (option) => option.value === formData.endTime,
+    );
+    return endTimeOption ? endTimeOption.label : '';
+  };
 
   return (
     <Dialog
@@ -512,20 +535,15 @@ const NewEventForm = ({
                 />
                 <FormControl fullWidth margin="normal">
                   <InputLabel id="end-time-label">End Time</InputLabel>
-                  <Select
-                    labelId="end-time-label"
-                    name="endTime"
-                    value={formData.endTime}
-                    onChange={handleInputChange}
+                  <TextField
+                    value={getEndTimeLabel()}
                     label="End Time"
                     disabled
-                  >
-                    {timeOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                  />
                 </FormControl>
               </Box>
             </Grid>
