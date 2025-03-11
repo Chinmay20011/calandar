@@ -45,7 +45,49 @@ const colorOptions = [
   { name: 'Pink', value: '#E91E63' },
 ];
 
-const durationOptions = ['1 hour', '1.5 hours', '2 hours', '2.5 hours'];
+const durationOptions = ['1 hour', '1 hour 15 min', '1 hour 30 min'];
+
+// Generate time options in 30 minute increments (12:00 PM to 11:30 AM) - reversed to start with PM
+const generateTimeOptions = () => {
+  const options = [];
+  // Start with PM times (12 PM to 11:30 PM)
+  for (let hour = 12; hour < 24; hour++) {
+    const displayHour = hour === 12 ? 12 : hour - 12;
+
+    // Add the hour:00 option
+    options.push({
+      value: `${hour.toString().padStart(2, '0')}:00`,
+      label: `${displayHour}:00 PM`,
+    });
+
+    // Add the hour:30 option
+    options.push({
+      value: `${hour.toString().padStart(2, '0')}:30`,
+      label: `${displayHour}:30 PM`,
+    });
+  }
+
+  // Then add AM times (12 AM to 11:30 AM)
+  for (let hour = 0; hour < 12; hour++) {
+    const displayHour = hour === 0 ? 12 : hour;
+
+    // Add the hour:00 option
+    options.push({
+      value: `${hour.toString().padStart(2, '0')}:00`,
+      label: `${displayHour}:00 AM`,
+    });
+
+    // Add the hour:30 option
+    options.push({
+      value: `${hour.toString().padStart(2, '0')}:30`,
+      label: `${displayHour}:30 AM`,
+    });
+  }
+
+  return options;
+};
+
+const timeOptions = generateTimeOptions();
 
 // Mock data for teachers, subjects, branches, and students
 const teacherOptions = [
@@ -113,6 +155,7 @@ const NewEventForm = ({
     date: formattedDate,
     startTime: initialTime || '',
     duration: '1 hour',
+    customDuration: '',
     endTime: '',
     teacher: '',
     teacherId: null,
@@ -123,6 +166,10 @@ const NewEventForm = ({
     color: '#4285F4',
   });
 
+  const [errors, setErrors] = useState({});
+  const [colorAnchorEl, setColorAnchorEl] = useState(null);
+  const [studentAnchorEl, setStudentAnchorEl] = useState(null);
+  const [teacherAnchorEl, setTeacherAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
 
@@ -150,11 +197,6 @@ const NewEventForm = ({
     }
   }, [initialTeacherId, teachers, open]);
 
-  const [errors, setErrors] = useState({});
-  const [colorAnchorEl, setColorAnchorEl] = useState(null);
-  const [studentAnchorEl, setStudentAnchorEl] = useState(null);
-  const [teacherAnchorEl, setTeacherAnchorEl] = useState(null);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -169,18 +211,25 @@ const NewEventForm = ({
       });
     }
 
-    if (name === 'startTime' || name === 'duration') {
-      calculateEndTime(
-        name === 'startTime' ? value : formData.startTime,
-        name === 'duration' ? value : formData.duration,
-      );
+    if (name === 'startTime') {
+      calculateEndTime(value, formData.duration);
+    } else if (name === 'duration') {
+      calculateEndTime(formData.startTime, value);
     }
   };
 
   const calculateEndTime = (startTime, duration) => {
     if (!startTime || !duration) return;
 
-    const durationHours = parseFloat(duration.split(' ')[0]);
+    let durationHours;
+
+    if (duration === '1 hour 30 min') {
+      durationHours = 1.5;
+    } else if (duration === '1 hour 15 min') {
+      durationHours = 1.25;
+    } else {
+      durationHours = 1; // Default to 1 hour
+    }
 
     if (isNaN(durationHours)) return;
 
@@ -314,6 +363,7 @@ const NewEventForm = ({
     if (validateForm()) {
       const eventData = {
         ...formData,
+        duration: formData.duration,
         color: formData.color,
         teacherId: formData.teacherId,
         students: formData.students.map((student, index) => {
@@ -411,18 +461,28 @@ const NewEventForm = ({
                 <AccessTimeIcon
                   sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
                 />
-                <TextField
-                  name="startTime"
-                  label="Start Time"
-                  type="time"
-                  fullWidth
-                  value={formData.startTime}
-                  onChange={handleInputChange}
-                  margin="normal"
-                  error={!!errors.startTime}
-                  helperText={errors.startTime}
-                  InputLabelProps={{ shrink: true }}
-                />
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="start-time-label">Start Time</InputLabel>
+                  <Select
+                    labelId="start-time-label"
+                    name="startTime"
+                    value={formData.startTime}
+                    onChange={handleInputChange}
+                    label="Start Time"
+                    error={!!errors.startTime}
+                  >
+                    {timeOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.startTime && (
+                    <Typography color="error" variant="caption">
+                      {errors.startTime}
+                    </Typography>
+                  )}
+                </FormControl>
               </Box>
             </Grid>
 
@@ -450,18 +510,23 @@ const NewEventForm = ({
                 <AccessTimeIcon
                   sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
                 />
-                <TextField
-                  name="endTime"
-                  label="End Time"
-                  type="time"
-                  fullWidth
-                  value={formData.endTime}
-                  onChange={handleInputChange}
-                  margin="normal"
-                  error={!!errors.endTime}
-                  helperText={errors.endTime}
-                  InputLabelProps={{ shrink: true }}
-                />
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="end-time-label">End Time</InputLabel>
+                  <Select
+                    labelId="end-time-label"
+                    name="endTime"
+                    value={formData.endTime}
+                    onChange={handleInputChange}
+                    label="End Time"
+                    disabled
+                  >
+                    {timeOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Box>
             </Grid>
           </Grid>
@@ -622,7 +687,6 @@ const NewEventForm = ({
                       border: '1px solid #ccc',
                       borderRadius: '4px',
                       p: 1,
-                      //   mt: 1,
                       minHeight: '56px',
                       cursor: 'pointer',
                     }}

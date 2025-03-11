@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
-import { Box } from '@mui/material'
-import CalanderLeft from './components/CalanderLeft'
-import CalanderRight from './components/CalanderRight'
+import React, { useEffect, useState } from 'react';
+import { Box } from '@mui/material';
+import CalanderLeft from './components/CalanderLeft';
+import CalanderRight from './components/CalanderRight';
 
 // Mock data for teachers list
 const teachersList = [
@@ -25,7 +25,7 @@ const teachersList = [
   { id: 18, name: 'Tasks', checked: true, color: '#F44336' },
   { id: 19, name: 'Tulsi', checked: true, color: '#4CAF50' },
   { id: 20, name: 'Vidhi Rajani', checked: true, color: '#CDDC39' },
-  { id: 21, name: 'Vishwajeet Barule', checked: true, color: '#FF4081' }
+  { id: 21, name: 'Vishwajeet Barule', checked: true, color: '#FF4081' },
 ];
 
 const App = () => {
@@ -36,32 +36,32 @@ const App = () => {
 
   const handleAddEvent = (newEvent) => {
     console.log('Adding new event with color:', newEvent.color); // Debug log
-    
+
     // Create new event with exact color from form
     const eventWithColor = {
       ...newEvent,
       id: Date.now(),
-      color: newEvent.color // Keep exact color
+      color: newEvent.color, // Keep exact color
     };
-    
-    setEvents(prevEvents => [...prevEvents, eventWithColor]);
+
+    setEvents((prevEvents) => [...prevEvents, eventWithColor]);
   };
 
   const handleUpdateEvent = (updatedEvent) => {
     console.log('Updating event:', updatedEvent);
-    
-    setEvents(prevEvents => 
-      prevEvents.map(event => 
-        event.id === updatedEvent.id ? updatedEvent : event
-      )
+
+    setEvents((prevEvents) =>
+      prevEvents.map((event) =>
+        event.id === updatedEvent.id ? updatedEvent : event,
+      ),
     );
   };
 
   const handleDeleteEvent = (eventId) => {
     console.log('Deleting event with ID:', eventId);
-    
-    setEvents(prevEvents => 
-      prevEvents.filter(event => event.id !== eventId)
+
+    setEvents((prevEvents) =>
+      prevEvents.filter((event) => event.id !== eventId),
     );
   };
 
@@ -70,10 +70,10 @@ const App = () => {
   };
 
   const handleToggleTeacher = (id) => {
-    setTeachers(prevTeachers => 
-      prevTeachers.map(teacher => 
-        teacher.id === id ? { ...teacher, checked: !teacher.checked } : teacher
-      )
+    setTeachers((prevTeachers) =>
+      prevTeachers.map((teacher) =>
+        teacher.id === id ? { ...teacher, checked: !teacher.checked } : teacher,
+      ),
     );
   };
 
@@ -81,17 +81,17 @@ const App = () => {
     setViewMode(mode);
   };
 
-  return(
-    <Box 
-      sx={{ 
-        display: 'flex', 
+  return (
+    <Box
+      sx={{
+        display: 'flex',
         height: '100vh',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       <Box sx={{ width: '240px', borderRight: '1px solid #e0e0e0' }}>
-        <CalanderLeft 
-          selectedDate={selectedDate} 
+        <CalanderLeft
+          selectedDate={selectedDate}
           onDateSelect={handleDateSelect}
           events={events}
           teachers={teachers}
@@ -101,8 +101,8 @@ const App = () => {
         />
       </Box>
       <Box sx={{ flex: 1 }}>
-        <CalanderRight 
-          events={events} 
+        <CalanderRight
+          events={events}
           selectedDate={selectedDate}
           onAddEvent={handleAddEvent}
           onUpdateEvent={handleUpdateEvent}
@@ -113,6 +113,6 @@ const App = () => {
         />
       </Box>
     </Box>
-  )
-}
-export default App
+  );
+};
+export default App;
