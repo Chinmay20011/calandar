@@ -30,6 +30,9 @@ const CalanderRight = ({
   teachers,
   viewMode = 'Month',
   onViewChange,
+  isIPhoneSE = false,
+  isMobile = false,
+  userRole = 'admin',
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openEventForm, setOpenEventForm] = useState(false);
@@ -194,6 +197,7 @@ const CalanderRight = ({
     // Format the hour to HH:MM format
     const formattedHour = `${hour.toString().padStart(2, '0')}:00`;
     setSelectedTime(formattedHour);
+    setSelectedTeacherId(teacherId);
     setOpenEventForm(true);
   };
 
@@ -223,11 +227,43 @@ const CalanderRight = ({
 
     // Only proceed with WhatsApp sharing if the icon hasn't been clicked before
     if (!clickedWhatsAppEvents[event.id]) {
-      // You can implement the WhatsApp sharing functionality here
-      // For example, opening a WhatsApp web link with event details:
-      const message = `Event: ${event.title}\nDate: ${normalizeDate(
-        event.date,
-      )?.toLocaleDateString()}\nTime: ${event.startTime} - ${event.endTime}`;
+      // Format date and time
+      const eventDate = new Date(event.date);
+      const formattedDate = eventDate.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+
+      // Convert 24-hour format to 12-hour format with AM/PM
+      const formatTime = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      };
+
+      const startTime = formatTime(event.startTime);
+      const endTime = formatTime(event.endTime);
+
+      // Find teacher name
+      const teacher = teachers.find(t => t.id === event.teacherId);
+      const teacherName = teacher ? teacher.name : 'Admin';
+
+      // Format the message with emojis and proper alignment
+      const message = `📅 Date: ${formattedDate}
+⏰ Time: ${startTime} - ${endTime}
+
+📍 Location: ${event.location || 'North Campus'}
+👨‍🏫 Teacher: ${teacherName}
+📖 Subject: ${event.subject || 'Chemistry'}
+🏢 Branch: ${event.branch || 'Main Branch'}`
+
+
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     }
@@ -274,6 +310,15 @@ const CalanderRight = ({
     );
   };
 
+  // Check if event has ended
+  const isEventEnded = (event) => {
+    const now = new Date();
+    const eventDate = new Date(event.date);
+    const [endHour, endMinute] = event.endTime.split(':').map(Number);
+    eventDate.setHours(endHour, endMinute);
+    return now > eventDate;
+  };
+
   // Render month view
   const renderMonthView = () => {
     return (
@@ -299,6 +344,11 @@ const CalanderRight = ({
       ? teachers.filter((teacher) => teacher.checked)
       : [];
 
+    // For iPhone SE, limit the number of visible teachers
+    const visibleTeachers = isIPhoneSE ? 
+      (activeTeachers.length > 0 ? [activeTeachers[0]] : []) : 
+      activeTeachers;
+
     // Always show at least one column, even if no teachers are selected
     return (
       <Box
@@ -313,15 +363,15 @@ const CalanderRight = ({
           sx={{
             display: 'grid',
             gridTemplateColumns:
-              activeTeachers.length > 0
-                ? `80px repeat(${activeTeachers.length}, minmax(120px, 1fr))`
+              visibleTeachers.length > 0
+                ? `80px repeat(${visibleTeachers.length}, minmax(120px, 1fr))`
                 : '80px 1fr', // One column for time + one empty column
             gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
             border: '1px solid #e0e0e0',
             borderRadius: '8px',
             minWidth:
-              activeTeachers.length > 3
-                ? 80 + activeTeachers.length * 150 + 'px'
+              visibleTeachers.length > 3 && !isIPhoneSE
+                ? 80 + visibleTeachers.length * 150 + 'px'
                 : '100%',
             // ^ Ensure minimum width based on number of teachers
             height: 'max-content',
@@ -335,7 +385,7 @@ const CalanderRight = ({
               borderRight: '1px solid #e0e0e0',
               borderBottom: '1px solid #e0e0e0',
               backgroundColor: '#f5f5f5',
-              p: 1,
+              p: isIPhoneSE ? 0.5 : 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -346,9 +396,9 @@ const CalanderRight = ({
             </Typography>
           </Box>
 
-          {/* Teacher Headers - only show if there are active teachers */}
-          {activeTeachers.length > 0 ? (
-            activeTeachers.map((teacher, index) => {
+          {/* Teacher Headers - only show if there are visible teachers */}
+          {visibleTeachers.length > 0 ? (
+            visibleTeachers.map((teacher, index) => {
               const onLeave = isTeacherOnLeave(teacher.id);
 
               return (
@@ -358,12 +408,12 @@ const CalanderRight = ({
                     gridColumn: `${index + 2} / ${index + 3}`,
                     gridRow: '1 / 2',
                     borderRight:
-                      index < activeTeachers.length - 1
+                      index < visibleTeachers.length - 1
                         ? '1px solid #e0e0e0'
                         : 'none',
                     borderBottom: '1px solid #e0e0e0',
                     backgroundColor: '#f5f5f5',
-                    p: 1,
+                    p: isIPhoneSE ? 0.5 : 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -386,8 +436,8 @@ const CalanderRight = ({
                 >
                   <Box
                     sx={{
-                      width: 40,
-                      height: 40,
+                      width: isIPhoneSE ? 30 : 40,
+                      height: isIPhoneSE ? 30 : 40,
                       borderRadius: '50%',
                       backgroundColor: teacher.color || '#ccc',
                       display: 'flex',
@@ -395,8 +445,9 @@ const CalanderRight = ({
                       justifyContent: 'center',
                       color: 'white',
                       fontWeight: 'bold',
-                      mb: 1,
+                      mb: isIPhoneSE ? 0.5 : 1,
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      fontSize: isIPhoneSE ? '0.7rem' : '0.8rem',
                     }}
                   >
                     {teacher.name
@@ -409,6 +460,7 @@ const CalanderRight = ({
                     sx={{
                       fontWeight: 'bold',
                       color: 'text.primary',
+                      fontSize: isIPhoneSE ? '0.7rem' : '0.8rem',
                     }}
                     noWrap
                   >
@@ -449,13 +501,13 @@ const CalanderRight = ({
                     borderRight: '1px solid #e0e0e0',
                     borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
                     backgroundColor: '#f5f5f5',
-                    p: 1,
+                    p: isIPhoneSE ? 0.5 : 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontSize: isIPhoneSE ? '0.7rem' : '0.8rem' }}>
                     {hour === 0
                       ? '12 AM'
                       : hour < 12
@@ -466,9 +518,9 @@ const CalanderRight = ({
                   </Typography>
                 </Box>
 
-                {/* Teacher cells - only show if there are active teachers */}
-                {activeTeachers.length > 0 ? (
-                  activeTeachers.map((teacher, index) => {
+                {/* Teacher cells - only show if there are visible teachers */}
+                {visibleTeachers.length > 0 ? (
+                  visibleTeachers.map((teacher, index) => {
                     // Find events for this teacher at this hour
                     const teacherEvents = events.filter((event) => {
                       if (
@@ -484,7 +536,8 @@ const CalanderRight = ({
                       return (
                         !isNaN(eventHour) &&
                         eventHour === hour &&
-                        event.teacherId === teacher.id
+                        event.teacherId === teacher.id &&
+                        isSameDay(normalizeDate(event.date), currentDate)
                       );
                     });
 
@@ -499,12 +552,12 @@ const CalanderRight = ({
                           gridRow: `${hour + 2} / ${hour + 3}`,
                           p: 0.5,
                           borderRight:
-                            index < activeTeachers.length - 1
+                            index < visibleTeachers.length - 1
                               ? '1px solid #e0e0e0'
                               : 'none',
                           borderBottom:
                             hour < 23 ? '1px solid #e0e0e0' : 'none',
-                          minHeight: '60px',
+                          minHeight: isIPhoneSE ? '50px' : '60px',
                           position: 'relative',
                           cursor: 'pointer', // Always use pointer cursor
                           '&:hover': {
@@ -541,12 +594,13 @@ const CalanderRight = ({
                               left: '2px',
                               right: '2px',
                               height: 'calc(100% - 4px)',
-                              backgroundColor:
-                                event.color || teacher.color || '#4285F4',
-                              color: 'white',
-                              p: 1,
+                              backgroundColor: isEventEnded(event) 
+                                ? '#E0E0E0' // Gray color for ended events
+                                : event.color || teacher.color || '#4285F4',
+                              color: isEventEnded(event) ? '#757575' : 'white',
+                              p: isIPhoneSE ? 0.5 : 1,
                               borderRadius: '4px',
-                              fontSize: '0.75rem',
+                              fontSize: isIPhoneSE ? '0.65rem' : '0.75rem',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -562,16 +616,20 @@ const CalanderRight = ({
                                 filter: 'grayscale(30%)',
                                 border: '1px solid rgba(244, 67, 54, 0.3)',
                               }),
+                              transition: 'all 0.3s ease-in-out',
                             }}
                           >
                             <Typography
                               variant="caption"
-                              sx={{ fontWeight: 'bold' }}
+                              sx={{ 
+                                fontWeight: 'bold',
+                                fontSize: isIPhoneSE ? '0.6rem' : '0.7rem'
+                              }}
                               noWrap
                             >
                               {event.title}
                             </Typography>
-                            {event.students && event.students.length > 0 && (
+                            {event.students && event.students.length > 0 && !isIPhoneSE && (
                               <Box
                                 sx={{
                                   mt: 0.5,
@@ -674,6 +732,7 @@ const CalanderRight = ({
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 0.5,
+                                fontSize: isIPhoneSE ? '0.6rem' : '0.7rem'
                               }}
                             >
                               On Leave
@@ -691,7 +750,7 @@ const CalanderRight = ({
                       gridColumn: '2 / 3',
                       gridRow: `${hour + 2} / ${hour + 3}`,
                       borderBottom: hour < 23 ? '1px solid #e0e0e0' : 'none',
-                      minHeight: '60px',
+                      minHeight: isIPhoneSE ? '50px' : '60px',
                       cursor: 'pointer',
                       '&:hover': {
                         backgroundColor: 'rgba(0, 0, 0, 0.04)',
@@ -724,8 +783,8 @@ const CalanderRight = ({
     );
 
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6">Agenda View</Typography>
+      <Box sx={{ p: isIPhoneSE ? 1 : 2 }}>
+        <Typography variant="h6" sx={{ fontSize: isIPhoneSE ? '1.1rem' : '1.25rem' }}>Agenda View</Typography>
 
         {/* Search input */}
         <TextField
@@ -755,7 +814,7 @@ const CalanderRight = ({
             <Paper
               key={index}
               sx={{
-                p: 2,
+                p: isIPhoneSE ? 1 : 2,
                 mb: 2,
                 borderLeft: `4px solid ${event.color || '#4285F4'}`,
               }}
@@ -763,31 +822,57 @@ const CalanderRight = ({
               <Box
                 sx={{
                   display: 'flex',
+                  flexDirection: isIPhoneSE ? 'column' : 'row',
                   justifyContent: 'space-between',
-                  alignItems: 'flex-start',
+                  alignItems: isIPhoneSE ? 'flex-start' : 'flex-start',
                 }}
               >
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      fontSize: isIPhoneSE ? '0.9rem' : '1rem'
+                    }}
+                  >
                     {event.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {normalizeDate(event.date)?.toLocaleDateString()} •{' '}
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      fontSize: isIPhoneSE ? '0.75rem' : '0.875rem'
+                    }}
+                  >
+                                        {normalizeDate(event.date)?.toLocaleDateString()} •{' '}
                     {event.startTime} - {event.endTime}
                   </Typography>
                   {event.description && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        mt: 1,
+                        fontSize: isIPhoneSE ? '0.75rem' : '0.875rem'
+                      }}
+                    >
                       {event.description}
                     </Typography>
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    gap: 2, 
+                    alignItems: 'center',
+                    mt: isIPhoneSE ? 1 : 0
+                  }}
+                >
                   {/* WhatsApp icon for sending messages */}
                   <WhatsAppIcon
                     sx={{
                       color: '#25D366',
                       cursor: 'pointer',
-                      fontSize: 40,
+                      fontSize: isIPhoneSE ? 30 : 40,
                     }}
                     onClick={() => handleWhatsAppClick(event)}
                   />
@@ -799,7 +884,7 @@ const CalanderRight = ({
                       sx={{
                         color: '#4CAF50',
                         fontWeight: 'bold',
-                        fontSize: '16px',
+                        fontSize: isIPhoneSE ? '14px' : '16px',
                       }}
                     >
                       Sent
@@ -807,9 +892,9 @@ const CalanderRight = ({
                   ) : (
                     <TaskAltIcon
                       sx={{
-                        color: '#f44336', // Changed from #9e9e9e (gray) to #f44336 (red)
+                        color: '#f44336',
                         cursor: 'pointer',
-                        fontSize: 40,
+                        fontSize: isIPhoneSE ? 30 : 40,
                       }}
                       onClick={() => handleMarkAsSent(event)}
                     />
@@ -822,6 +907,7 @@ const CalanderRight = ({
       </Box>
     );
   };
+
   // Render the current view based on viewMode
   const renderCurrentView = () => {
     switch (viewMode) {
@@ -833,11 +919,11 @@ const CalanderRight = ({
         return (
           <Box
             sx={{
-              height: '100%', // Take full height
-              width: '100%', // Take full width
+              height: '100%',
+              width: '100%',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden' /* Hide overflow at parent level */,
+              overflow: 'hidden',
             }}
           >
             {renderDayView()}
@@ -850,6 +936,16 @@ const CalanderRight = ({
     }
   };
 
+  // Add an effect to update events periodically
+  useEffect(() => {
+    // Force re-render every minute to update event colors
+    const interval = setInterval(() => {
+      setCurrentDate(new Date(currentDate)); // This will trigger a re-render
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [currentDate]);
+
   return (
     <Box
       sx={{
@@ -858,42 +954,45 @@ const CalanderRight = ({
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        maxWidth: '82vw', // Constrain to viewport width
-        overflow: 'hidden', // Hide overflow at container level
+        maxWidth: isIPhoneSE ? '100vw' : '82vw',
+        overflow: 'hidden',
       }}
     >
-      {/* Top Navigation */}
+      {/* Top Navigation - simplified for iPhone SE */}
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: isIPhoneSE ? 1 : 2,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           borderBottom: '1px solid #e0e0e0',
           width: '100%',
-          maxWidth: '100%', // Ensure the toolbar doesn't exceed container width
+          maxWidth: '100%',
         }}
       >
         {/* Left side - Today button and navigation */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button
-            onClick={handleToday}
-            sx={{
-              textTransform: 'none',
-              px: 3,
-              borderColor: viewMode === 'Today' ? 'transparent' : '#e0e0e0',
-              backgroundColor: viewMode === 'Today' ? '#000066' : 'white',
-              color: viewMode === 'Today' ? 'white' : '#000066',
-              '&:hover': {
-                backgroundColor: viewMode === 'Today' ? '#000066' : '#f5f5f5',
+          {/* Hide Today button on iPhone SE */}
+          {!isIPhoneSE && (
+            <Button
+              onClick={handleToday}
+              sx={{
+                textTransform: 'none',
+                px: 3,
                 borderColor: viewMode === 'Today' ? 'transparent' : '#e0e0e0',
-              },
-              fontWeight: 'bold',
-            }}
-          >
-            Today
-          </Button>
+                backgroundColor: viewMode === 'Today' ? '#000066' : 'white',
+                color: viewMode === 'Today' ? 'white' : '#000066',
+                '&:hover': {
+                  backgroundColor: viewMode === 'Today' ? '#000066' : '#f5f5f5',
+                  borderColor: viewMode === 'Today' ? 'transparent' : '#e0e0e0',
+                },
+                fontWeight: 'bold',
+              }}
+            >
+              Today
+            </Button>
+          )}
 
           <IconButton onClick={handlePrevious} size="small">
             <ArrowBackIosNewIcon fontSize="small" />
@@ -903,105 +1002,111 @@ const CalanderRight = ({
             <ArrowForwardIosIcon fontSize="small" />
           </IconButton>
 
-          <Typography variant="h6" sx={{ fontWeight: 'normal' }}>
+          <Typography variant="h6" sx={{ fontWeight: 'normal', fontSize: isIPhoneSE ? '0.9rem' : 'inherit' }}>
             {viewMode === 'Day'
               ? formatDay(currentDate)
               : formatMonthYear(currentDate)}
           </Typography>
         </Box>
 
-        {/* Right side - View mode buttons with updated styling */}
-        <Box sx={{ display: 'flex' }}>
-          <ButtonGroup
-            variant="outlined"
-            sx={{
-              borderRadius: '8px',
-              overflow: 'hidden',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Button
-              onClick={() => handleViewChange('Day')}
+        {/* Right side - View mode buttons - hide for teachers on iPhone SE */}
+        {!(isIPhoneSE && userRole === 'teacher') && (
+          <Box sx={{ display: 'flex' }}>
+            <ButtonGroup
+              variant="outlined"
               sx={{
-                textTransform: 'none',
-                px: 3,
-                borderColor: viewMode === 'Day' ? 'transparent' : '#e0e0e0',
-                backgroundColor: viewMode === 'Day' ? '#000066' : 'white',
-                color: viewMode === 'Day' ? 'white' : '#000066',
-                '&:hover': {
-                  backgroundColor: viewMode === 'Day' ? '#000066' : '#f5f5f5',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+            >
+              <Button
+                onClick={() => handleViewChange('Day')}
+                sx={{
+                  textTransform: 'none',
+                  px: isIPhoneSE ? 1 : 3,
+                  fontSize: isIPhoneSE ? '0.7rem' : 'inherit',
                   borderColor: viewMode === 'Day' ? 'transparent' : '#e0e0e0',
-                },
-                fontWeight: 'bold',
-              }}
-            >
-              Day
-            </Button>
+                  backgroundColor: viewMode === 'Day' ? '#000066' : 'white',
+                  color: viewMode === 'Day' ? 'white' : '#000066',
+                  '&:hover': {
+                    backgroundColor: viewMode === 'Day' ? '#000066' : '#f5f5f5',
+                    borderColor: viewMode === 'Day' ? 'transparent' : '#e0e0e0',
+                  },
+                  fontWeight: 'bold',
+                }}
+              >
+                Day
+              </Button>
 
-            <Button
-              onClick={() => handleViewChange('Week')}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                borderColor: viewMode === 'Week' ? 'transparent' : '#e0e0e0',
-                backgroundColor: viewMode === 'Week' ? '#3366cc' : 'white',
-                color: viewMode === 'Week' ? 'white' : '#3366cc',
-                '&:hover': {
-                  backgroundColor: viewMode === 'Week' ? '#3366cc' : '#f5f5f5',
+              <Button
+                onClick={() => handleViewChange('Week')}
+                sx={{
+                  textTransform: 'none',
+                  px: isIPhoneSE ? 1 : 3,
+                  fontSize: isIPhoneSE ? '0.7rem' : 'inherit',
                   borderColor: viewMode === 'Week' ? 'transparent' : '#e0e0e0',
-                },
-                fontWeight: 'bold',
-              }}
-            >
-              Week
-            </Button>
+                  backgroundColor: viewMode === 'Week' ? '#3366cc' : 'white',
+                  color: viewMode === 'Week' ? 'white' : '#3366cc',
+                  '&:hover': {
+                    backgroundColor: viewMode === 'Week' ? '#3366cc' : '#f5f5f5',
+                    borderColor: viewMode === 'Week' ? 'transparent' : '#e0e0e0',
+                  },
+                  fontWeight: 'bold',
+                }}
+              >
+                Week
+              </Button>
 
-            <Button
-              onClick={() => handleViewChange('Month')}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                borderColor: viewMode === 'Month' ? 'transparent' : '#e0e0e0',
-                backgroundColor: viewMode === 'Month' ? '#ffcc00' : 'white',
-                color: viewMode === 'Month' ? '#000000' : '#ffcc00',
-                '&:hover': {
-                  backgroundColor: viewMode === 'Month' ? '#ffcc00' : '#f5f5f5',
+              <Button
+                onClick={() => handleViewChange('Month')}
+                sx={{
+                  textTransform: 'none',
+                  px: isIPhoneSE ? 1 : 3,
+                  fontSize: isIPhoneSE ? '0.7rem' : 'inherit',
                   borderColor: viewMode === 'Month' ? 'transparent' : '#e0e0e0',
-                },
-                fontWeight: 'bold',
-              }}
-            >
-              Month
-            </Button>
+                  backgroundColor: viewMode === 'Month' ? '#ffcc00' : 'white',
+                  color: viewMode === 'Month' ? '#000000' : '#ffcc00',
+                  '&:hover': {
+                    backgroundColor: viewMode === 'Month' ? '#ffcc00' : '#f5f5f5',
+                    borderColor: viewMode === 'Month' ? 'transparent' : '#e0e0e0',
+                  },
+                  fontWeight: 'bold',
+                }}
+              >
+                Month
+              </Button>
 
-            <Button
-              onClick={() => handleViewChange('Agenda')}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                borderColor: viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
-                backgroundColor: viewMode === 'Agenda' ? '#000066' : 'white',
-                color: viewMode === 'Agenda' ? 'white' : '#000066',
-                '&:hover': {
-                  backgroundColor:
-                    viewMode === 'Agenda' ? '#000066' : '#f5f5f5',
-                  borderColor:
-                    viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
-                },
-                fontWeight: 'bold',
-              }}
-            >
-              Agenda
-            </Button>
-          </ButtonGroup>
-        </Box>
+              <Button
+                onClick={() => handleViewChange('Agenda')}
+                sx={{
+                  textTransform: 'none',
+                  px: isIPhoneSE ? 1 : 3,
+                  fontSize: isIPhoneSE ? '0.7rem' : 'inherit',
+                  borderColor: viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
+                  backgroundColor: viewMode === 'Agenda' ? '#000066' : 'white',
+                  color: viewMode === 'Agenda' ? 'white' : '#000066',
+                  '&:hover': {
+                    backgroundColor:
+                      viewMode === 'Agenda' ? '#000066' : '#f5f5f5',
+                    borderColor:
+                      viewMode === 'Agenda' ? 'transparent' : '#e0e0e0',
+                  },
+                  fontWeight: 'bold',
+                }}
+              >
+                Agenda
+              </Button>
+            </ButtonGroup>
+          </Box>
+        )}
       </Paper>
 
       {/* Calendar Content */}
       <Box
         sx={{
           flexGrow: 1,
-          overflow: 'hidden' /* Control overflow at this level */,
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           width: '100%',

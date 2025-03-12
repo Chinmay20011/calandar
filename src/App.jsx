@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material'; // Add useMediaQuery
 import CalanderLeft from './components/CalanderLeft';
 import CalanderRight from './components/CalanderRight';
 
@@ -33,15 +33,27 @@ const App = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [teachers, setTeachers] = useState(teachersList);
   const [viewMode, setViewMode] = useState('Month');
+  const [userRole, setUserRole] = useState('teacher'); // Default to teacher role
+  
+  // Add responsive breakpoints
+  const isMobile = useMediaQuery('(max-width:768px)');
+  const isIPhoneSE = useMediaQuery('(max-width:375px)'); // iPhone SE width
+  
+  // Force Day view for iPhone SE when user is a teacher
+  useEffect(() => {
+    if (isIPhoneSE && userRole === 'teacher') {
+      setViewMode('Day');
+    }
+  }, [isIPhoneSE, userRole]);
 
   const handleAddEvent = (newEvent) => {
-    console.log('Adding new event with color:', newEvent.color); // Debug log
+    console.log('Adding new event with color:', newEvent.color);
 
     // Create new event with exact color from form
     const eventWithColor = {
       ...newEvent,
       id: Date.now(),
-      color: newEvent.color, // Keep exact color
+      color: newEvent.color,
     };
 
     setEvents((prevEvents) => [...prevEvents, eventWithColor]);
@@ -77,30 +89,60 @@ const App = () => {
     );
   };
 
+  // Update handleViewChange to restrict view changes for teachers on iPhone SE
   const handleViewChange = (mode) => {
+    // Restrict view changes on iPhone SE for teachers - only allow Day view
+    if (isIPhoneSE && userRole === 'teacher' && mode !== 'Day') {
+      return;
+    }
     setViewMode(mode);
+  };
+
+  // Toggle user role for testing purposes
+  const toggleUserRole = () => {
+    setUserRole(prev => prev === 'admin' ? 'teacher' : 'admin');
   };
 
   return (
     <Box
       sx={{
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         height: '100vh',
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ width: '240px', borderRight: '1px solid #e0e0e0' }}>
-        <CalanderLeft
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          events={events}
-          teachers={teachers}
-          onToggleTeacher={handleToggleTeacher}
-          onViewChange={handleViewChange}
-          onAddEvent={handleAddEvent}
-        />
-      </Box>
-      <Box sx={{ flex: 1 }}>
+      {/* Only show left sidebar if not on iPhone SE or if user is admin */}
+      {(!isIPhoneSE || userRole === 'admin') && (
+        <Box 
+          sx={{ 
+            width: isMobile ? '100%' : '240px', 
+            height: isMobile ? 'auto' : '100%',
+            borderRight: isMobile ? 'none' : '1px solid #e0e0e0',
+            borderBottom: isMobile ? '1px solid #e0e0e0' : 'none',
+          }}
+        >
+          <CalanderLeft
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            events={events}
+            teachers={teachers}
+            onToggleTeacher={handleToggleTeacher}
+            onViewChange={handleViewChange}
+            onAddEvent={handleAddEvent}
+            isIPhoneSE={isIPhoneSE}
+            isMobile={isMobile}
+            userRole={userRole}
+          />
+        </Box>
+      )}
+      <Box 
+        sx={{ 
+          flex: 1,
+          height: isMobile ? 'calc(100vh - 60px)' : '100%',
+          overflow: 'auto',
+        }}
+      >
         <CalanderRight
           events={events}
           selectedDate={selectedDate}
@@ -110,9 +152,33 @@ const App = () => {
           teachers={teachers}
           viewMode={viewMode}
           onViewChange={handleViewChange}
+          isIPhoneSE={isIPhoneSE}
+          isMobile={isMobile}
+          userRole={userRole}
         />
+      </Box>
+      
+      {/* Development toggle for testing - remove in production */}
+      <Box 
+        sx={{ 
+          position: 'fixed', 
+          bottom: 10, 
+          right: 10, 
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '5px 10px',
+          backgroundColor: '#f0f0f0',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '12px',
+        }}
+        onClick={toggleUserRole}
+      >
+        {`Role: ${userRole}`}
       </Box>
     </Box>
   );
 };
+
 export default App;

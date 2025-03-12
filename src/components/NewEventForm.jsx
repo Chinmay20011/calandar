@@ -173,34 +173,6 @@ const NewEventForm = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
 
-  // Function to calculate the end time based on start time and duration
-  const calculateEndTime = (startTime, duration) => {
-    if (!startTime) return '';
-
-    const [hours, minutes] = startTime.split(':').map(Number);
-    let minutesToAdd = 60; // Default is 1 hour
-
-    // Determine minutes to add based on selected duration
-    if (duration === '1 hour') {
-      minutesToAdd = 60;
-    } else if (duration === '1 hour 15 min') {
-      minutesToAdd = 75;
-    } else if (duration === '1 hour 30 min') {
-      minutesToAdd = 90;
-    }
-
-    // Calculate end time
-    const totalMinutes = hours * 60 + minutes + minutesToAdd;
-    const endHours = Math.floor(totalMinutes / 60) % 24;
-    const endMinutes = totalMinutes % 60;
-
-    // Format end time
-    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(
-      2,
-      '0',
-    )}`;
-  };
-
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
@@ -225,20 +197,6 @@ const NewEventForm = ({
     }
   }, [initialTeacherId, teachers, open]);
 
-  // Update end time whenever start time or duration changes
-  useEffect(() => {
-    if (formData.startTime) {
-      const newEndTime = calculateEndTime(
-        formData.startTime,
-        formData.duration,
-      );
-      setFormData((prev) => ({
-        ...prev,
-        endTime: newEndTime,
-      }));
-    }
-  }, [formData.startTime, formData.duration]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -247,12 +205,6 @@ const NewEventForm = ({
       ...formData,
       [name]: value,
     };
-
-    // Special handling for duration - immediate end time update
-    if (name === 'duration' && formData.startTime) {
-      const newEndTime = calculateEndTime(formData.startTime, value);
-      updatedFormData.endTime = newEndTime;
-    }
 
     // Update form data
     setFormData(updatedFormData);
@@ -410,15 +362,6 @@ const NewEventForm = ({
   const studentOpen = Boolean(studentAnchorEl);
   const teacherOpen = Boolean(teacherAnchorEl);
 
-  // Find the appropriate display label for the end time
-  const getEndTimeLabel = () => {
-    if (!formData.endTime) return '';
-    const endTimeOption = timeOptions.find(
-      (option) => option.value === formData.endTime,
-    );
-    return endTimeOption ? endTimeOption.label : '';
-  };
-
   return (
     <Dialog
       open={open}
@@ -489,10 +432,43 @@ const NewEventForm = ({
                   <Select
                     labelId="start-time-label"
                     name="startTime"
-                    value={formData.startTime}
-                    onChange={handleInputChange}
+                    value={formData.startTime || ''}
+                    onChange={(e) => {
+                      const newStartTime = e.target.value;
+                      const startOption = timeOptions.find(opt => opt.value === newStartTime);
+                      
+                      if (startOption && formData.duration) {
+                        // Parse start time
+                        const [hours, minutes] = newStartTime.split(':').map(Number);
+                        
+                        // Calculate minutes to add
+                        const minutesToAdd = formData.duration === '1 hour 30 min' ? 90 : 
+                                          formData.duration === '1 hour 15 min' ? 75 : 60;
+
+                        // Calculate end time
+                        let totalMinutes = hours * 60 + minutes + minutesToAdd;
+                        let endHours = Math.floor(totalMinutes / 60);
+                        if (endHours >= 24) endHours -= 24;
+                        const endMinutes = totalMinutes % 60;
+
+                        // Format end time
+                        const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+                        const endOption = timeOptions.find(opt => opt.value === endTime);
+
+                        setFormData({
+                          ...formData,
+                          startTime: newStartTime,
+                          endTime: endOption ? endTime : ''
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          startTime: newStartTime,
+                          endTime: ''
+                        });
+                      }
+                    }}
                     label="Start Time"
-                    error={!!errors.startTime}
                   >
                     {timeOptions.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -500,11 +476,6 @@ const NewEventForm = ({
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.startTime && (
-                    <Typography color="error" variant="caption">
-                      {errors.startTime}
-                    </Typography>
-                  )}
                 </FormControl>
               </Box>
             </Grid>
@@ -515,8 +486,41 @@ const NewEventForm = ({
                 <Select
                   labelId="duration-label"
                   name="duration"
-                  value={formData.duration}
-                  onChange={handleInputChange}
+                  value={formData.duration || ''}
+                  onChange={(e) => {
+                    const newDuration = e.target.value;
+                    
+                    if (formData.startTime) {
+                      // Parse start time
+                      const [hours, minutes] = formData.startTime.split(':').map(Number);
+                      
+                      // Calculate minutes to add
+                      const minutesToAdd = newDuration === '1 hour 30 min' ? 90 : 
+                                        newDuration === '1 hour 15 min' ? 75 : 60;
+
+                      // Calculate end time
+                      let totalMinutes = hours * 60 + minutes + minutesToAdd;
+                      let endHours = Math.floor(totalMinutes / 60);
+                      if (endHours >= 24) endHours -= 24;
+                      const endMinutes = totalMinutes % 60;
+
+                      // Format end time
+                      const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+                      const endOption = timeOptions.find(opt => opt.value === endTime);
+
+                      setFormData({
+                        ...formData,
+                        duration: newDuration,
+                        endTime: endOption ? endTime : ''
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        duration: newDuration,
+                        endTime: ''
+                      });
+                    }
+                  }}
                   label="Duration"
                 >
                   {durationOptions.map((option) => (
@@ -530,13 +534,11 @@ const NewEventForm = ({
 
             <Grid item xs={12} sm={4}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <AccessTimeIcon
-                  sx={{ mt: 4, mr: 1, color: 'text.secondary' }}
-                />
+                <AccessTimeIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
                   <InputLabel id="end-time-label">End Time</InputLabel>
                   <TextField
-                    value={getEndTimeLabel()}
+                    value={formData.endTime ? timeOptions.find(opt => opt.value === formData.endTime)?.label || '' : ''}
                     label="End Time"
                     disabled
                     fullWidth
