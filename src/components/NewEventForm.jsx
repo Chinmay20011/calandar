@@ -157,6 +157,7 @@ const NewEventForm = ({
     startTime: initialTime || '',
     duration: '1 hour',
     endTime: '',
+    displayEndTime: '',
     teacher: '',
     teacherId: null,
     subject: '',
@@ -453,18 +454,24 @@ const NewEventForm = ({
 
                         // Format end time
                         const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-                        const endOption = timeOptions.find(opt => opt.value === endTime);
+                        
+                        // Format display time (for readability)
+                        const displayEndHour = endHours === 0 ? 12 : endHours > 12 ? endHours - 12 : endHours;
+                        const ampm = endHours >= 12 ? 'PM' : 'AM';
+                        const displayEndTime = `${displayEndHour}:${String(endMinutes).padStart(2, '0')} ${ampm}`;
 
                         setFormData({
                           ...formData,
                           startTime: newStartTime,
-                          endTime: endOption ? endTime : ''
+                          endTime: endTime,
+                          displayEndTime: displayEndTime
                         });
                       } else {
                         setFormData({
                           ...formData,
                           startTime: newStartTime,
-                          endTime: ''
+                          endTime: '',
+                          displayEndTime: ''
                         });
                       }
                     }}
@@ -506,18 +513,24 @@ const NewEventForm = ({
 
                       // Format end time
                       const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-                      const endOption = timeOptions.find(opt => opt.value === endTime);
+                      
+                      // Format display time (for readability)
+                      const displayEndHour = endHours === 0 ? 12 : endHours > 12 ? endHours - 12 : endHours;
+                      const ampm = endHours >= 12 ? 'PM' : 'AM';
+                      const displayEndTime = `${displayEndHour}:${String(endMinutes).padStart(2, '0')} ${ampm}`;
 
                       setFormData({
                         ...formData,
                         duration: newDuration,
-                        endTime: endOption ? endTime : ''
+                        endTime: endTime,
+                        displayEndTime: displayEndTime
                       });
                     } else {
                       setFormData({
                         ...formData,
                         duration: newDuration,
-                        endTime: ''
+                        endTime: '',
+                        displayEndTime: ''
                       });
                     }
                   }}
@@ -536,10 +549,9 @@ const NewEventForm = ({
               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 <AccessTimeIcon sx={{ mt: 4, mr: 1, color: 'text.secondary' }} />
                 <FormControl fullWidth margin="normal">
-                  <InputLabel id="end-time-label">End Time</InputLabel>
                   <TextField
-                    value={formData.endTime ? timeOptions.find(opt => opt.value === formData.endTime)?.label || '' : ''}
-                    label="End Time"
+                    value={formData.displayEndTime || ''}
+                    label="End Time"   
                     disabled
                     fullWidth
                     InputProps={{

@@ -35,6 +35,7 @@ const CalanderRight = ({
   userRole = 'admin',
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [openEventForm, setOpenEventForm] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -55,14 +56,7 @@ const CalanderRight = ({
         teacherId: teachers && teachers.length > 0 ? teachers[0].id : null, // First teacher
         date: new Date().toISOString().split('T')[0], // Today
         status: 'leave',
-      },
-      {
-        teacherId: teachers && teachers.length > 1 ? teachers[1].id : null, // Second teacher
-        date: new Date(new Date().setDate(new Date().getDate() + 5))
-          .toISOString()
-          .split('T')[0], // 5 days from today
-        status: 'leave',
-      },
+      }
       // Add more test data as needed
     ];
 
@@ -79,6 +73,20 @@ const CalanderRight = ({
   useEffect(() => {
     console.log('Events in CalanderRight:', events);
   }, [events]);
+
+  // Update current time every 30 seconds for smoother movement
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date());
+    };
+    
+    // Set initial time
+    updateTime();
+    
+    const timer = setInterval(updateTime, 30000); // Update every 30 seconds
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Format date to display month and year
   const formatMonthYear = (date) => {
@@ -346,17 +354,22 @@ const CalanderRight = ({
 
     // For iPhone SE, limit the number of visible teachers
     const visibleTeachers = isIPhoneSE ? 
-      (activeTeachers.length > 0 ? [activeTeachers[0]] : []) : 
+      (activeTeachers.length > 0 ? [activeTeachers[2]] : []) : 
       activeTeachers;
 
-    // Always show at least one column, even if no teachers are selected
+    // Calculate current time position
+    const currentHour = currentTime.getHours();
+    const currentMinute = currentTime.getMinutes();
+    const timePosition = ((currentHour + currentMinute / 60) * 60) + 80; // 80px is header height
+
     return (
       <Box
         sx={{
           width: '100%',
           height: '100%',
-          overflowX: 'auto', // Enable horizontal scrolling
-          overflowY: 'auto', // Enable vertical scrolling
+          overflowX: 'auto',
+          overflowY: 'auto',
+          position: 'relative',
         }}
       >
         <Box
@@ -365,7 +378,7 @@ const CalanderRight = ({
             gridTemplateColumns:
               visibleTeachers.length > 0
                 ? `80px repeat(${visibleTeachers.length}, minmax(120px, 1fr))`
-                : '80px 1fr', // One column for time + one empty column
+                : '80px 1fr',
             gridTemplateRows: `80px repeat(${hours.length}, 60px)`,
             border: '1px solid #e0e0e0',
             borderRadius: '8px',
@@ -373,10 +386,57 @@ const CalanderRight = ({
               visibleTeachers.length > 3 && !isIPhoneSE
                 ? 80 + visibleTeachers.length * 150 + 'px'
                 : '100%',
-            // ^ Ensure minimum width based on number of teachers
             height: 'max-content',
+            position: 'relative',
           }}
         >
+          {/* Current time indicator - only show in Day view */}
+          <Box
+            sx={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: `${timePosition}px`,
+              height: '2px',
+              backgroundColor: '#f44336',
+              zIndex: 2,
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'top 0.3s linear',
+              width: isIPhoneSE ? 'calc(100% - 2px)' : '100%', // Adjust width for iPhone SE border
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: isIPhoneSE ? '70px' : '72px',
+                top: '-4px',
+                width: isIPhoneSE ? '6px' : '8px',
+                height: isIPhoneSE ? '6px' : '8px',
+                backgroundColor: '#f44336',
+                borderRadius: '50%',
+                boxShadow: '0 0 4px rgba(244, 67, 54, 0.5)',
+              },
+              '&::after': {
+                content: `"${currentTime.toLocaleTimeString('en-US', { 
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true 
+                })}"`,
+                position: 'absolute',
+                left: '8px',
+                top: isIPhoneSE ? '-11px' : '-10px',
+                fontSize: isIPhoneSE ? '0.6rem' : '0.75rem',
+                fontWeight: 'bold',
+                color: '#f44336',
+                whiteSpace: 'nowrap',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                padding: isIPhoneSE ? '1px 3px' : '2px 4px',
+                borderRadius: '2px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                lineHeight: 1,
+              }
+            }}
+          />
+
           {/* Empty top-left cell */}
           <Box
             sx={{
